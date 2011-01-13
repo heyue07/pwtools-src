@@ -88,8 +88,8 @@ using namespace System::Drawing;
 		private: System::Windows::Forms::CheckBox^  checkBox_RemoveMissing;
 		private: System::Windows::Forms::CheckBox^  checkBox_BackupMissing;
 		private: System::Windows::Forms::Button^  button_OK;
-		private: System::Windows::Forms::Button^  button_Cancel;
-		private: System::ComponentModel::Container ^components;
+	private: System::Windows::Forms::Button^  button_Cancel;
+	private: System::ComponentModel::Container ^components;
 
 #pragma region Windows Form Designer generated code
 		/// <summary>

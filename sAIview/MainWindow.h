@@ -1,8 +1,8 @@
 #pragma once
 
+#include "aipolicy.h"
 #include "LoadingScreen.h"
 #include "TranslatorService.h"
-#include "..\pwAPI\include\pw.h"
 
 using namespace System;
 using namespace System::ComponentModel;
@@ -33,7 +33,7 @@ public ref class MainWindow : public System::Windows::Forms::Form
 			initialize->Show();
 			Application::DoEvents();
 
-			skillReplace = loadSkillReplace("sAIview\\skill_replace.txt");
+			skillReplace = loadSkillReplace("skill_replace.txt");
 			GUID = 1;
 
 			try
@@ -72,7 +72,7 @@ public ref class MainWindow : public System::Windows::Forms::Form
 		String^ to;
 		Collections::SortedList^ skillReplace;
 
-		private: PW::Data::AiPolicy::AiPolicy^ AI;
+		private: AIPolicy^ AI;
 		private: int GUID;
 
 		private: System::Windows::Forms::MenuStrip^  menuStrip_mainMenu;
@@ -312,7 +312,7 @@ public ref class MainWindow : public System::Windows::Forms::Form
 			this->comboBox_cat->Items->AddRange(gcnew cli::array< System::Object^  >(3) {L"Procedures", L"Conditions", L"AI Control Link"});
 			this->comboBox_cat->Location = System::Drawing::Point(9, 27);
 			this->comboBox_cat->Name = L"comboBox_cat";
-			this->comboBox_cat->Size = System::Drawing::Size(98, 21);
+			this->comboBox_cat->Size = System::Drawing::Size(121, 21);
 			this->comboBox_cat->TabIndex = 0;
 			this->comboBox_cat->SelectedIndexChanged += gcnew System::EventHandler(this, &MainWindow::change_searchCat);
 			// 
@@ -351,9 +351,9 @@ public ref class MainWindow : public System::Windows::Forms::Form
 			this->comboBox_subCat->Anchor = static_cast<System::Windows::Forms::AnchorStyles>((System::Windows::Forms::AnchorStyles::Bottom | System::Windows::Forms::AnchorStyles::Left));
 			this->comboBox_subCat->DropDownStyle = System::Windows::Forms::ComboBoxStyle::DropDownList;
 			this->comboBox_subCat->FormattingEnabled = true;
-			this->comboBox_subCat->Location = System::Drawing::Point(113, 27);
+			this->comboBox_subCat->Location = System::Drawing::Point(136, 27);
 			this->comboBox_subCat->Name = L"comboBox_subCat";
-			this->comboBox_subCat->Size = System::Drawing::Size(144, 21);
+			this->comboBox_subCat->Size = System::Drawing::Size(121, 21);
 			this->comboBox_subCat->TabIndex = 1;
 			// 
 			// comboBox_language
@@ -415,6 +415,9 @@ public ref class MainWindow : public System::Windows::Forms::Form
 		}
 #pragma endregion
 
+
+		/*
+		*/
 		Collections::SortedList^ loadSkillReplace(String^ file)
 		{
 			Collections::SortedList^ skillTable = gcnew Collections::SortedList();
@@ -442,8 +445,588 @@ public ref class MainWindow : public System::Windows::Forms::Form
 
 			return skillTable;
 		}
+		/*
+			get target
+		*/
+		String^ procedure_ext(int ext)
+		{
+			if(ext == 0)
+			{
+				return "AGGRO_FIRST";
+			}
+			if(ext == 1)
+			{
+				return "AGGRO_SECOND";
+			}
+			if(ext == 2)
+			{
+				return "AGGRO_SECOND_RAND";
+			}
+			if(ext == 3)
+			{
+				return "MOST_HP";
+			}
+			if(ext == 4)
+			{
+				return "MOST_MP";
+			}
+			if(ext == 5)
+			{
+				return "LEAST_HP";
+			}
+			if(ext == 6)
+			{
+				return "COMBO";
+			}
+			if(ext == 7)
+			{
+				return "SELF";
+			}
+			return "?";
+		}
+		/*
+			Get the condition property as string representation
+		*/
+		String^ condition_name(int operator_id)
+		{
+			if(operator_id == 0)
+			{
+				return "Is_Timer_Ticking";
+			}
+			if(operator_id == 1)
+			{
+				return "Is_HP_Less";
+			}
+			if(operator_id == 2)
+			{
+				return "Is_Combat_Started";
+			}
+			if(operator_id == 3)
+			{
+				return "Randomize";
+			}
+			if(operator_id == 4)
+			{
+				return "Is_Target_Killed";
+			}
+			if(operator_id == 5)
+			{
+				return "!"; // NOT
+			}
+			if(operator_id == 6)
+			{
+				return "||"; // OR
+			}
+			if(operator_id == 7)
+			{
+				return "&&"; // AND
+			}
+			if(operator_id == 8)
+			{
+				return "Is_Dead";
+			}
+// ---------- following condition types are > 1.3.6 Server -----------------
+			if(operator_id == 9)
+			{
+				return "+"; // SUM
+			}
+			if(operator_id == 10)
+			{
+				return "-"; // MINUS ?
+			}
+			if(operator_id == 11)
+			{
+				return "=="; // EQUALS ?
+			}
+			if(operator_id == 12)
+			{
+				return ">"; // GREATER THEN
+			}
+			if(operator_id == 13)
+			{
+				return ">="; // GREATER EQUALS
+			}
+			if(operator_id == 14)
+			{
+				return "<"; // LESS THEN
+			}
+			if(operator_id == 15)
+			{
+				return "<="; // LESS EQUALS ?
+			}
+			if(operator_id == 16)
+			{
+				return "Public_Counter"; // A property/counter that holds a public/shared value
+			}
+			if(operator_id == 17)
+			{
+				return "Value"; // defines a value for operator comparsion i.e. value of score, minutes, level, ...
+			}
+			return "?";
+		}
+		/*
+			Get the condition value depending on condition type
+		*/
+		String^ condition_value(Condition^ c)
+		{
+			if(c->operator_id == 0)
+			{
+				return BitConverter::ToInt32(c->value, 0).ToString();
+			}
+			if(c->operator_id == 1)
+			{
+				return BitConverter::ToSingle(c->value, 0).ToString("F2");
+			}
+			if(c->operator_id == 2)
+			{
+				return "";
+			}
+			if(c->operator_id == 3)
+			{
+				return BitConverter::ToSingle(c->value, 0).ToString("F2");
+			}
+			if(c->operator_id == 4)
+			{
+				return "";
+			}
+			if(c->operator_id == 5)
+			{
+				return "NOT";
+			}
+			if(c->operator_id == 6)
+			{
+				return "";
+			}
+			if(c->operator_id == 7)
+			{
+				return "";
+			}
+			if(c->operator_id == 8)
+			{
+				return "";
+			}
+// ---------- following condition types are > 1.3.6 Server -----------------
+			if(c->operator_id == 9)
+			{
+				return "";
+			}
+			if(c->operator_id == 10)
+			{
+				return "";
+			}
+			if(c->operator_id == 11)
+			{
+				return "";
+			}
+			if(c->operator_id == 12)
+			{
+				return "";
+			}
+			if(c->operator_id == 13)
+			{
+				return "";
+			}
+			if(c->operator_id == 14)
+			{
+				return "";
+			}
+			if(c->operator_id == 15)
+			{
+				return "";
+			}
+			if(c->operator_id == 16)
+			{
+				return BitConverter::ToInt32(c->value, 0).ToString();
+			}
+			if(c->operator_id == 17)
+			{
+				return BitConverter::ToInt32(c->value, 0).ToString();
+			}
+			return "?";
+		}
+		/*
+			Converts condition to a human readable expression
+		*/
+		String^ condition_expression(Condition^ c)
+		{
+			String^ expression = "";
 
+			if(c->condition_type == 1)
+			{
+				expression += "(";
+				expression += condition_expression(c->condition_left);
+				expression += " " + condition_name(c->operator_id) + " ";
+				expression += condition_expression(c->condition_right);
+				expression += ")";
+			}
+			if(c->condition_type == 2)
+			{
+				expression += condition_name(c->operator_id);
+				expression += "(";
+				expression += condition_expression(c->condition_right);
+				expression += ")";
+			}
+			if(c->condition_type > 2)
+			{
+				expression += condition_name(c->operator_id);
+				expression += "(";
+				if(c->argument_bytes > 0)
+				{
+					expression += condition_value(c);
+				}
+				expression += ")";
+			}
 
+			return expression;
+		}
+		/*
+			Returns the procedure name for an ID
+		*/
+		String^ procedure_expression(Procedure^ p)
+		{
+			String^ expression = "";
+
+			if(p->type == 0)
+			{
+				expression = "Attack(";
+				expression += ((int)p->parameters[0]).ToString();
+				expression += ")";
+			}
+			if(p->type == 1)
+			{
+				expression = "Cast_Skill(";
+				expression += ((int)p->parameters[0]).ToString() + ", ";
+				expression += ((int)p->parameters[1]).ToString();
+				expression += ")";
+			}
+			if(p->type == 2)
+			{
+				expression = "Broadcast_Message(";
+				expression += ((int)p->parameters[0]).ToString() + ", ";
+				expression += "\"" + (Encoding::Unicode)->GetString((array<unsigned char>^)p->parameters[1])->Replace("\0", "") + "\"";
+				expression += ")";
+			}
+			if(p->type == 3)
+			{
+				expression = "Reset_Aggro()";
+			}
+			if(p->type == 4)
+			{
+				expression = "Execute_ActionSet(";
+				expression += ((int)p->parameters[0]).ToString();
+				expression += ")";
+			}
+			if(p->type == 5)
+			{
+				expression = "Disable_ActionSet(";
+				expression += ((int)p->parameters[0]).ToString();
+				expression += ")";
+			}
+			if(p->type == 6)
+			{
+				expression = "Enable_ActionSet(";
+				expression += ((int)p->parameters[0]).ToString();
+				expression += ")";
+			}
+			if(p->type == 7)
+			{
+				expression = "Create_Timer(";
+				expression += ((int)p->parameters[0]).ToString() + ", ";
+				expression += ((int)p->parameters[1]).ToString() + ", ";
+				expression += ((int)p->parameters[2]).ToString();
+				expression += ")";
+			}
+			if(p->type == 8)
+			{
+				expression = "Remove_Timer(";
+				expression += ((int)p->parameters[0]).ToString();
+				expression += ")";
+			}
+			if(p->type == 9)
+			{
+				expression = "Run_Away()";
+			}
+			if(p->type == 10)
+			{
+				expression = "Be_Taunted()";
+			}
+			if(p->type == 11)
+			{
+				expression = "Fade_Target()";
+			}
+			if(p->type == 12)
+			{
+				expression = "Fade_Aggro()";
+			}
+			if(p->type == 13)
+			{
+				expression = "Break()";
+			}
+			if(p->type == 14)
+			{
+				expression = "NPC_Generator(";
+				expression += ((int)p->parameters[0]).ToString() + ", ";
+				expression += ((int)p->parameters[1]).ToString();
+				expression += ")";
+			}
+// ---------- following procedure types are > 1.3.6 Server -----------------
+			if(p->type == 15)
+			{
+				expression = "Initialize_Public_Counter(";
+				expression += ((int)p->parameters[0]).ToString() + ", ";
+				expression += ((int)p->parameters[1]).ToString() + ", ";
+				expression += ((int)p->parameters[2]).ToString();
+				expression += ")";
+			}
+			if(p->type == 16)
+			{
+				expression = "Increment_Public_Counter(";
+				expression += ((int)p->parameters[0]).ToString() + ", ";
+				expression += ((int)p->parameters[1]).ToString();
+				expression += ")";
+			}
+			if(p->type == 17)
+			{
+				expression = "Player_Aimed_NPC_Spawn(";
+				expression += ((int)p->parameters[0]).ToString() + ", "; // NPC ID
+				expression += ((int)p->parameters[1]).ToString() + ", ";
+				expression += ((int)p->parameters[2]).ToString() + ", "; // LifeTime
+				expression += ((int)p->parameters[3]).ToString() + ", ";
+				expression += ((int)p->parameters[4]).ToString() + ", ";
+				expression += ((int)p->parameters[5]).ToString();
+				expression += ")";
+			}
+			expression += " EXT(" + procedure_ext(p->target);
+			if(p->target == 6)
+			{
+				expression += ", " + p->extra.ToString();
+			}
+			expression += ")";
+			return expression;
+		}
+
+		/*
+			Returns the parameters of a procedure, depending on the procedure type
+		*/
+		array<Object^>^ read_parameters(int type, BinaryReader^ br)
+		{
+			if(type == 0)
+			{
+				return gcnew array<Object^>{br->ReadInt32()}; // Attack
+			}
+			if(type == 1)
+			{
+				return gcnew array<Object^>{br->ReadInt32(), br->ReadInt32()}; // Cast Skill
+			}
+			if(type == 2)
+			{
+				int count = br->ReadInt32();
+				return gcnew array<Object^>{count, br->ReadBytes(count)}; // Broadcast Message
+			}
+			if(type == 3)
+			{
+				return gcnew array<Object^>{}; // Break
+			}
+			if(type == 4)
+			{
+				return gcnew array<Object^>{br->ReadInt32()}; // Execute Trigger
+			}
+			if(type == 5)
+			{
+				return gcnew array<Object^>{br->ReadInt32()}; // Disable Trigger
+			}
+			if(type == 6)
+			{
+				return gcnew array<Object^>{br->ReadInt32()}; // Enable Trigger
+			}
+			if(type == 7)
+			{
+				return gcnew array<Object^>{br->ReadInt32(), br->ReadInt32(), br->ReadInt32()}; // Create Timer
+			}
+			if(type == 8)
+			{
+				return gcnew array<Object^>{br->ReadInt32()}; // Remove Timer
+			}
+			if(type == 9)
+			{
+				return gcnew array<Object^>{}; // Run Away (AGGRO_FIRST)
+			}
+			if(type == 10)
+			{
+				return gcnew array<Object^>{}; // Be Taunted (COMBO, int)
+			}
+			if(type == 11)
+			{
+				return gcnew array<Object^>{}; // Fade Target (AGGRO_SECOND)
+			}
+			if(type == 12)
+			{
+				return gcnew array<Object^>{}; // Fade Aggro ()
+			}
+			if(type == 13)
+			{
+				return gcnew array<Object^>{}; // Break
+			}
+			if(type == 14)
+			{
+				return gcnew array<Object^>{br->ReadInt32(), br->ReadInt32()}; // NPC Generator
+			}
+// ---------- following procedure types are > 1.3.6 Server -----------------
+			if(type == 15)
+			{
+				return gcnew array<Object^>{br->ReadInt32(), br->ReadInt32(), br->ReadInt32()};
+			}
+			if(type == 16)
+			{
+				return gcnew array<Object^>{br->ReadInt32(), br->ReadInt32()};
+			}
+			if(type == 17)
+			{
+				return gcnew array<Object^>{br->ReadInt32(), br->ReadInt32(), br->ReadInt32(), br->ReadInt32(), br->ReadInt32(), br->ReadInt32()};
+			}
+			return gcnew array<Object^>(0);
+		}
+		/*
+			Writes the parameters of a procedure depending of the procedure type into the stream (file)
+		*/
+		void write_parameters(int type, array<Object^>^ Parameters, BinaryWriter^ bw)
+		{
+			if(type == 0)
+			{
+				bw->Write((int)Parameters[0]);
+			}
+			if(type == 1)
+			{
+				bw->Write((int)Parameters[0]);
+				bw->Write((int)Parameters[1]);
+			}
+			if(type == 2)
+			{
+				int count = (int)Parameters[0];
+				bw->Write(count);
+				bw->Write((array<unsigned char>^)Parameters[1]);
+			}
+			if(type == 4)
+			{
+				bw->Write((int)Parameters[0]);
+			}
+			if(type == 5)
+			{
+				bw->Write((int)Parameters[0]);
+			}
+			if(type == 6)
+			{
+				bw->Write((int)Parameters[0]);
+			}
+			if(type == 7)
+			{
+				bw->Write((int)Parameters[0]);
+				bw->Write((int)Parameters[1]);
+				bw->Write((int)Parameters[2]);
+			}
+			if(type == 8)
+			{
+				bw->Write((int)Parameters[0]);
+			}
+			if(type == 14)
+			{
+				bw->Write((int)Parameters[0]);
+				bw->Write((int)Parameters[1]);
+			}
+// ---------- following procedure types are > 1.3.6 Server -----------------
+			if(type == 15)
+			{
+				bw->Write((int)Parameters[0]);
+				bw->Write((int)Parameters[1]);
+				bw->Write((int)Parameters[2]);
+			}
+			if(type == 16)
+			{
+				bw->Write((int)Parameters[0]);
+				bw->Write((int)Parameters[1]);
+			}
+			if(type == 17)
+			{
+				bw->Write((int)Parameters[0]);
+				bw->Write((int)Parameters[1]);
+				bw->Write((int)Parameters[2]);
+				bw->Write((int)Parameters[3]);
+				bw->Write((int)Parameters[4]);
+				bw->Write((int)Parameters[5]);
+			}
+		}
+
+		/*
+			Returns the recursive condition tree from a stream (file)
+			conditions are like nodes, they have properties and also can have sub-conditions...
+			it seems to be some kind of if then else tree structure
+		*/
+		Condition^ load_condition(BinaryReader^ br)
+		{
+			Condition^ c = gcnew Condition();
+
+			c->operator_id = br->ReadInt32();
+			c->argument_bytes = br->ReadInt32();
+			//if(c->argument_bytes == 4)
+			//{
+				c->value = br->ReadBytes(c->argument_bytes);
+			//}
+			c->condition_type = br->ReadInt32(); // 1 || 2 || 3
+			if(c->condition_type == 1)
+			{
+				c->condition_left = load_condition(br);
+				c->subnode_2 = br->ReadInt32(); // always 2
+				//if(c->subnode_2 == 2)
+				//{
+					c->condition_right = load_condition(br);
+					c->subnode_3 = br->ReadInt32(); // always 4
+				//}
+			}
+
+			if(c->condition_type == 2)
+			{
+				c->condition_right = load_condition(br);
+				c->subnode_2 = br->ReadInt32(); // always 4
+			}
+
+			return c;
+		}
+
+		/*
+			Writes the condition (and sub-conditions) to the stream (file)
+		*/
+		void save_condition(Condition^ c, BinaryWriter^ bw)
+		{
+			bw->Write(c->operator_id);
+			bw->Write(c->argument_bytes);
+			if(c->argument_bytes == 4)
+			{
+				bw->Write(c->value);
+			}
+
+			bw->Write(c->condition_type);
+
+			if(c->condition_type == 1)
+			{
+				save_condition(c->condition_left, bw);
+				bw->Write(c->subnode_2);
+				if(c->subnode_2 == 2)
+				{
+					save_condition(c->condition_right, bw);
+					bw->Write(c->subnode_3);
+				}
+			}
+
+			if(c->condition_type == 2)
+			{
+				save_condition(c->condition_right, bw);
+				bw->Write(c->subnode_2);
+			}
+		}
+
+		/*
+			load an aipolicy.data file into the global AI structure
+		*/
 		private: System::Void click_load(System::Object^  sender, System::EventArgs^  e)
 		{
 			OpenFileDialog^ load = gcnew OpenFileDialog();
@@ -459,13 +1042,48 @@ public ref class MainWindow : public System::Windows::Forms::Form
 					textBox_Condition->Clear();
 					listBox_Procedures->Items->Clear();
 
-					AI = gcnew PW::Data::AiPolicy::AiPolicy();
-					AI->Load(load->FileName);
+					FileStream^ fr = File::OpenRead(load->FileName);
+					BinaryReader^ br = gcnew BinaryReader(fr);
 
+					AI = gcnew AIPolicy();
+
+					AI->signature = br->ReadInt32();
+					AI->action_controllers_count = br->ReadInt32();
+					AI->action_controllers = gcnew array<ActionController^>(AI->action_controllers_count);
 					for(int ac=0; ac<AI->action_controllers->Length; ac++)
 					{
+						AI->action_controllers[ac] = gcnew ActionController();
+						AI->action_controllers[ac]->signature = br->ReadInt32();
+						AI->action_controllers[ac]->id = br->ReadInt32();
+						AI->action_controllers[ac]->action_sets_count = br->ReadInt32();
+						AI->action_controllers[ac]->action_sets = gcnew array<ActionSet^>(AI->action_controllers[ac]->action_sets_count);
 						listBox_ActionController->Items->Add(AI->action_controllers[ac]->id.ToString());
+						for(int as=0; as<AI->action_controllers[ac]->action_sets->Length; as++)
+						{
+							AI->action_controllers[ac]->action_sets[as] = gcnew ActionSet();
+							AI->action_controllers[ac]->action_sets[as]->version = br->ReadInt32();
+							AI->action_controllers[ac]->action_sets[as]->id = br->ReadInt32();
+							AI->action_controllers[ac]->action_sets[as]->flags = br->ReadBytes(3);
+							AI->action_controllers[ac]->action_sets[as]->name = br->ReadBytes(128);
+							AI->action_controllers[ac]->action_sets[as]->conditions = load_condition(br);
+							AI->action_controllers[ac]->action_sets[as]->procedures_count = br->ReadInt32();
+							AI->action_controllers[ac]->action_sets[as]->procedures = gcnew array<Procedure^>(AI->action_controllers[ac]->action_sets[as]->procedures_count);
+							for(int p=0; p<AI->action_controllers[ac]->action_sets[as]->procedures->Length; p++)
+							{
+								AI->action_controllers[ac]->action_sets[as]->procedures[p] = gcnew Procedure();
+								AI->action_controllers[ac]->action_sets[as]->procedures[p]->type = br->ReadInt32();
+								AI->action_controllers[ac]->action_sets[as]->procedures[p]->parameters = read_parameters(AI->action_controllers[ac]->action_sets[as]->procedures[p]->type, br);
+								AI->action_controllers[ac]->action_sets[as]->procedures[p]->target = br->ReadInt32();
+								if(AI->action_controllers[ac]->action_sets[as]->procedures[p]->target == 6)
+								{
+									AI->action_controllers[ac]->action_sets[as]->procedures[p]->extra = br->ReadInt32();
+								}
+							}
+						}
 					}
+
+					br->Close();
+					fr->Close();;
 
 					Cursor = Windows::Forms::Cursors::Default;
 				}
@@ -477,6 +1095,10 @@ public ref class MainWindow : public System::Windows::Forms::Form
 			}
 		}
 
+		/*
+			Export the currently loaded AI structure to an 1.3.6 compatible aipolicy.data file
+			Currently the export only works for AI <= 1.3.9, for 1.4.2 it only works until Controller[923]->ActionSet[9]
+		*/
 		private: System::Void click_export(System::Object^  sender, System::EventArgs^  e)
 		{
 			SaveFileDialog^ save = gcnew SaveFileDialog();
@@ -485,10 +1107,272 @@ public ref class MainWindow : public System::Windows::Forms::Form
 			{
 				Cursor = Windows::Forms::Cursors::WaitCursor;
 
-				AI->GetFixedAiPolicy(skillReplace)->Save(save->FileName);
+				AI = convert(AI);
+
+				FileStream^ fw = gcnew FileStream(save->FileName, FileMode::Create, FileAccess::Write);
+				BinaryWriter^ bw = gcnew BinaryWriter(fw);
+
+				bw->Write(AI->signature);
+				bw->Write(AI->action_controllers_count);
+				for(int ac=0; ac<AI->action_controllers->Length; ac++)
+				{
+					bw->Write(AI->action_controllers[ac]->signature);
+					bw->Write(AI->action_controllers[ac]->id);
+					bw->Write(AI->action_controllers[ac]->action_sets_count);
+					for(int as=0; as<AI->action_controllers[ac]->action_sets->Length; as++)
+					{
+						bw->Write(AI->action_controllers[ac]->action_sets[as]->version);
+						bw->Write(AI->action_controllers[ac]->action_sets[as]->id);
+						bw->Write(AI->action_controllers[ac]->action_sets[as]->flags);
+						bw->Write(AI->action_controllers[ac]->action_sets[as]->name);
+						// Write conditions
+						save_condition(AI->action_controllers[ac]->action_sets[as]->conditions, bw);
+						
+						bw->Write(AI->action_controllers[ac]->action_sets[as]->procedures_count);
+						for(int p=0; p<AI->action_controllers[ac]->action_sets[as]->procedures->Length; p++)
+						{
+							bw->Write(AI->action_controllers[ac]->action_sets[as]->procedures[p]->type);
+							write_parameters(AI->action_controllers[ac]->action_sets[as]->procedures[p]->type, AI->action_controllers[ac]->action_sets[as]->procedures[p]->parameters, bw);
+							bw->Write(AI->action_controllers[ac]->action_sets[as]->procedures[p]->target);
+							if(AI->action_controllers[ac]->action_sets[as]->procedures[p]->target == 6)
+							{
+								bw->Write(AI->action_controllers[ac]->action_sets[as]->procedures[p]->extra);
+							}
+						}
+					}
+				}
+
+				bw->Close();
+				fw->Close();;
 
 				Cursor = Windows::Forms::Cursors::Default;
 			}
+		}
+
+		/*
+			Rebuild the condition tree
+			If conditions are based on property ID's > 8, then this condition will be set to NULL
+		*/
+		Condition^ fix_conditions(Condition^ c)
+		{
+			if(c->operator_id > 8)
+			{
+				// try to replace operator id with a valid condition_(chain)
+
+				// remove condition
+				return nullptr;
+			}
+			else
+			{
+				if(c->condition_type == 1)
+				{
+					c->condition_left = fix_conditions(c->condition_left);
+					c->condition_right = fix_conditions(c->condition_right);
+
+					if(c->condition_left && c->condition_right)
+					{
+						// everything is OK
+						return c;
+					}
+					if(!c->condition_left && c->condition_right)
+					{
+						// left condition is broken, no need to operate between both conditions
+						// right condition replaces the current operator condition i.e. AND
+						return c->condition_right;
+					}
+					if(c->condition_left && !c->condition_right)
+					{
+						// right condition is broken, no need to operate between both conditions
+						// left condition replaces the current operator condition i.e. AND
+						return c->condition_left;
+					}
+					if(!c->condition_left && !c->condition_right)
+					{
+						// both conditions for this operator condition are broken
+						// completely drop this condition
+						return nullptr;
+					}
+				}
+				if(c->condition_type == 2)
+				{
+					c->condition_right = fix_conditions(c->condition_right);
+
+					if(c->condition_right)
+					{
+						return c;
+					}
+					else
+					{
+						return nullptr;
+					}
+				}
+				//if(c->condition_type > 2)
+				return c;
+			}
+		}
+
+		/*
+			Rebuild procedure list by removing all procedure types >= 15,
+			or remove procedures that calls monster skills with id >= 887
+		*/
+		array<Procedure^>^ fix_procedures(array<Procedure^>^ p)
+		{
+			int count = 0;
+			for(int i=0; i<p->Length; i++)
+			{
+				// count supported procedures
+				if(p[i]->type != 15 && p[i]->type != 16)
+				{
+					count++;
+				}
+			}
+
+			array<Procedure^>^ result = gcnew array<Procedure^>(count);
+			count = 0;
+
+			for(int i=0; i<p->Length; i++)
+			{
+				// only keep supported procedures 
+				if(p[i]->type != 15 && p[i]->type != 16)
+				{
+					result[count] = gcnew Procedure();
+					result[count]->type = p[i]->type;
+					result[count]->parameters = p[i]->parameters;
+					// replace skill if possible
+					if(p[i]->type == 1 && skillReplace->ContainsKey((int)p[i]->parameters[0]))
+					{
+						result[count]->parameters[0] = (int)skillReplace[(int)p[i]->parameters[0]];
+					}
+
+					if(p[i]->type == 2 && ((array<unsigned char>^)result[count]->parameters[1])[0] == '$')
+					{
+						// remove whitespace after macro
+						if(((array<unsigned char>^)result[count]->parameters[1])[4] == ' ')
+						{
+							array<unsigned char>^ _old = ((array<unsigned char>^)result[count]->parameters[1]);
+							array<unsigned char>^ _new = gcnew array<unsigned char>(_old->Length-2);
+
+							int n=0;
+							for(int i=0; i<_new->Length; i++)
+							{
+								if(n == 4)
+								{
+									n = 6;
+								}
+								_new[i] = _old[n];
+								n++;
+							}
+
+							result[count]->parameters[1] = _new;
+							result[count]->parameters[0] = _new->Length;
+						}
+
+						// replace $S macro (no-name, color?) with $B macro (no-name, gold)
+						if(((array<unsigned char>^)result[count]->parameters[1])[2] == 'S')
+						{
+							((array<unsigned char>^)result[count]->parameters[1])[2] = 'B';
+						}
+
+						// replace $I macro (no-name, red?) with $B macro (no-name, gold)
+						if(((array<unsigned char>^)result[count]->parameters[1])[2] == 'I')
+						{
+							((array<unsigned char>^)result[count]->parameters[1])[2] = 'B';
+						}
+					}
+					result[count]->target = p[i]->target;
+					result[count]->extra = p[i]->extra;
+
+					// replace player_aimed_npc_spawn with a simple npc_generator
+					if(p[i]->type == 17)
+					{
+						result[count]->type = 14;
+						// using i as unifier to prevent multiple npc_generator() with same id's in the same action set
+						int creature_builder_id = (GUID*1000000 + (int)p[i]->parameters[0]);
+						GUID++;
+						int start = 0; // 0: start, 1: stop
+						result[count]->parameters = gcnew array<Object^>{creature_builder_id, start};
+						result[count]->target = 0;
+						result[count]->extra = 0;
+					}
+
+					count++;
+				}
+			}
+
+			// if result is length 0 we have to add a dummy procedure, or action set will crash map
+			if(result->Length < 1)
+			{
+				result = gcnew array<Procedure^>(1);
+				result[0] = gcnew Procedure();
+				result[0]->type = 2;
+				result[0]->parameters = gcnew array<Object^>{6, Encoding::Unicode->GetBytes("...")};
+				result[0]->target = 0;
+				result[0]->extra = 0;
+			}
+
+			return result;
+		}
+
+		/*
+			try to convert any AI structure to a 1.3.6 compatible server version
+			+ replace signature and versions for file, collections and sets
+			+ remove unsupported conditions (condition->property > 8) and rebuild condition tree
+			+ remove unsupported procedures (procedure->id > 14)
+			+ remove procedures that are using monster skills with id > 887
+		*/
+		AIPolicy^ convert(AIPolicy^ source_ai)
+		{
+			// a countr for creating unique creature builder id's
+			// when replacing player_aimed_npc_spawn() procedure with npc_generate() procedure
+			GUID = 1;
+
+			AIPolicy^ result = gcnew AIPolicy();
+			result->signature = (int)0; // signature = 0 for <= 1.3.6
+			result->action_controllers_count = source_ai->action_controllers_count;
+			result->action_controllers = gcnew array<ActionController^>(result->action_controllers_count);
+
+			for(int ac=0; ac<result->action_controllers->Length; ac++)
+			{
+				result->action_controllers[ac] = gcnew ActionController();
+				result->action_controllers[ac]->signature = (int)0; // signature = 0 for <= 1.3.6
+				result->action_controllers[ac]->id = source_ai->action_controllers[ac]->id;
+				result->action_controllers[ac]->action_sets_count = source_ai->action_controllers[ac]->action_sets_count;
+				result->action_controllers[ac]->action_sets = gcnew array<ActionSet^>(result->action_controllers[ac]->action_sets_count);
+
+				for(int as=0; as<result->action_controllers[ac]->action_sets->Length; as++)
+				{
+					result->action_controllers[ac]->action_sets[as] = gcnew ActionSet();
+					result->action_controllers[ac]->action_sets[as]->version = (int)1; // signature = 1 for <= 1.3.6
+					result->action_controllers[ac]->action_sets[as]->id = source_ai->action_controllers[ac]->action_sets[as]->id;
+					result->action_controllers[ac]->action_sets[as]->flags = source_ai->action_controllers[ac]->action_sets[as]->flags; // 3 Bytes
+					result->action_controllers[ac]->action_sets[as]->name = source_ai->action_controllers[ac]->action_sets[as]->name; // 128 Bytes
+					// convert conditions
+					result->action_controllers[ac]->action_sets[as]->conditions = fix_conditions(source_ai->action_controllers[ac]->action_sets[as]->conditions);
+					// convert procedures
+					result->action_controllers[ac]->action_sets[as]->procedures = fix_procedures(source_ai->action_controllers[ac]->action_sets[as]->procedures);
+					result->action_controllers[ac]->action_sets[as]->procedures_count = result->action_controllers[ac]->action_sets[as]->procedures->Length;
+
+					// check for nullptr conditions after conversion
+					// because it could happen that condition only consists
+					// of properties > 1.3.6, this will cause in complete useless of condition tree 1.3.6
+					if(!result->action_controllers[ac]->action_sets[as]->conditions)
+					{
+						// Removing an actionset can leads to dead links, if a link from a procedure is pointing to this actionset id
+						// instead of removing this actionset, we create a default condition that is common false,
+						// but will be executed when linked by an execute_actionset() procedure
+						// for this behaviour we are using randomize(1.00)
+						result->action_controllers[ac]->action_sets[as]->conditions = gcnew Condition();
+						result->action_controllers[ac]->action_sets[as]->conditions->operator_id = 3;
+						result->action_controllers[ac]->action_sets[as]->conditions->argument_bytes = 4;
+						result->action_controllers[ac]->action_sets[as]->conditions->value = gcnew array<unsigned char>{0, 0, 128, 63};
+						result->action_controllers[ac]->action_sets[as]->conditions->subnode_2 = 0;
+						result->action_controllers[ac]->action_sets[as]->conditions->subnode_3 = 0;
+						result->action_controllers[ac]->action_sets[as]->conditions->condition_type = 3;
+					}
+				}
+			}
+
+			return result;
 		}
 		private: System::Void change_ActionController(System::Object^  sender, System::EventArgs^  e)
 		{
@@ -512,12 +1396,12 @@ public ref class MainWindow : public System::Windows::Forms::Form
 				int ac = listBox_ActionController->SelectedIndex;
 				int as = listBox_ActionSet->SelectedIndex;
 
-				textBox_Condition->Text = "IF{ " + AI->action_controllers[ac]->action_sets[as]->conditions->GetExpression() + " }";
+				textBox_Condition->Text = "IF{ " + condition_expression(AI->action_controllers[ac]->action_sets[as]->conditions) + " }";
 				
 				listBox_Procedures->Items->Clear();
 				for(int i=0; i<AI->action_controllers[ac]->action_sets[as]->procedures->Length; i++)
 				{
-					listBox_Procedures->Items->Add("[" + i.ToString() + "] " + AI->action_controllers[ac]->action_sets[as]->procedures[i]->GetExpression());
+					listBox_Procedures->Items->Add("[" + i.ToString() + "] " + procedure_expression(AI->action_controllers[ac]->action_sets[as]->procedures[i]));
 				}
 
 				if(soap && listBox_ActionSet->SelectedItem)
@@ -582,9 +1466,9 @@ public ref class MainWindow : public System::Windows::Forms::Form
 							"Fade_Aggro",
 							"Break",
 							"NPC_Generator",
-							"Initialize_Public_Counter",
-							"Increment_Public_Counter",
-							"Player_Aimed_NPC_Spawn"
+							"Procedure_15",
+							"Procedure_16",
+							"Procedure_17"
 						}
 					);
 					comboBox_subCat->SelectedIndex = 0;
@@ -649,7 +1533,7 @@ public ref class MainWindow : public System::Windows::Forms::Form
 					{
 						if(comboBox_cat->SelectedItem->ToString() == "Conditions")
 						{
-							if(textBox_pattern->Text != "" && AI->action_controllers[ac]->action_sets[as]->conditions->GetExpression()->Contains(textBox_pattern->Text))
+							if(textBox_pattern->Text != "" && condition_expression(AI->action_controllers[ac]->action_sets[as]->conditions)->Contains(textBox_pattern->Text))
 							{
 								listBox_ActionController->SelectedIndex = ac;
 								listBox_ActionSet->SelectedIndex = as;
@@ -663,7 +1547,7 @@ public ref class MainWindow : public System::Windows::Forms::Form
 							{
 								if(AI->action_controllers[ac]->action_sets[as]->procedures[pc]->type == comboBox_subCat->SelectedIndex)
 								{
-									if(textBox_pattern->Text == "" || AI->action_controllers[ac]->action_sets[as]->procedures[pc]->GetExpression()->Contains(textBox_pattern->Text))
+									if(textBox_pattern->Text == "" || procedure_expression(AI->action_controllers[ac]->action_sets[as]->procedures[pc])->Contains(textBox_pattern->Text))
 									{
 										listBox_ActionController->SelectedIndex = ac;
 										listBox_ActionSet->SelectedIndex = as;

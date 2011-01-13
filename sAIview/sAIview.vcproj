@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="Windows-1252"?>
 <VisualStudioProject
 	ProjectType="Visual C++"
-	Version="9.00"
+	Version="9,00"
 	Name="sAIview"
 	ProjectGUID="{0CA9B98C-39CF-410F-8208-7F1A58C71F7C}"
 	RootNamespace="sTools"
@@ -18,7 +18,7 @@
 	<Configurations>
 		<Configuration
 			Name="Debug|Win32"
-			OutputDirectory="..\bin"
+			OutputDirectory="..\bin\sAIview"
 			IntermediateDirectory=".\Debug"
 			ConfigurationType="1"
 			CharacterSet="2"
@@ -59,10 +59,10 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="nvtt.lib"
-				OutputFile="..\bin\sAIview_debug.exe"
+				AdditionalDependencies=""
+				OutputFile="..\bin\sAIview\sAIview_debug.exe"
 				LinkIncremental="1"
-				AdditionalLibraryDirectories="..\pwAPI\lib"
+				AdditionalLibraryDirectories=""
 				ManifestFile=".\Debug\$(TargetFileName).intermediate.manifest"
 				GenerateDebugInformation="true"
 				AssemblyDebug="1"
@@ -76,7 +76,7 @@
 			/>
 			<Tool
 				Name="VCManifestTool"
-				OutputManifestFile="..\bin\$(TargetFileName).embed.manifest"
+				OutputManifestFile=".\Debug\$(TargetFileName).embed.manifest"
 				EmbedManifest="true"
 			/>
 			<Tool
@@ -97,7 +97,7 @@
 		</Configuration>
 		<Configuration
 			Name="Release|Win32"
-			OutputDirectory="..\bin"
+			OutputDirectory="..\bin\sAIview"
 			IntermediateDirectory=".\Release"
 			ConfigurationType="1"
 			CharacterSet="2"
@@ -138,10 +138,10 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="nvtt.lib"
-				OutputFile="..\bin\sAIview.exe"
+				AdditionalDependencies=""
+				OutputFile="..\bin\sAIview\sAIview.exe"
 				LinkIncremental="1"
-				AdditionalLibraryDirectories="..\pwAPI\lib"
+				AdditionalLibraryDirectories=""
 				ManifestFile=".\Release\$(TargetFileName).intermediate.manifest"
 				GenerateDebugInformation="false"
 				SubSystem="2"
@@ -154,7 +154,7 @@
 			/>
 			<Tool
 				Name="VCManifestTool"
-				OutputManifestFile="..\bin\$(TargetFileName).embed.manifest"
+				OutputManifestFile=".\Release\$(TargetFileName).embed.manifest"
 				EmbedManifest="true"
 			/>
 			<Tool
@@ -222,6 +222,10 @@
 			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}"
 			>
 			<File
+				RelativePath=".\aipolicy.h"
+				>
+			</File>
+			<File
 				RelativePath=".\LoadingScreen.cpp"
 				>
 			</File>
@@ -260,6 +264,7 @@
 			</File>
 			<File
 				RelativePath=".\icons.resx"
+				SubType="Designer"
 				>
 			</File>
 		</Filter>

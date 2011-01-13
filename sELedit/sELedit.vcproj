@@ -18,7 +18,7 @@
 	<Configurations>
 		<Configuration
 			Name="Debug|Win32"
-			OutputDirectory="..\bin"
+			OutputDirectory="..\bin\sELedit"
 			IntermediateDirectory=".\Debug"
 			ConfigurationType="1"
 			CharacterSet="2"
@@ -59,10 +59,10 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="nvtt.lib"
-				OutputFile="..\bin\sELedit_debug.exe"
+				AdditionalDependencies=""
+				OutputFile="..\bin\sELedit\sELedit_debug.exe"
 				LinkIncremental="1"
-				AdditionalLibraryDirectories="..\pwAPI\lib"
+				AdditionalLibraryDirectories=""
 				ManifestFile=".\Debug\$(TargetFileName).intermediate.manifest"
 				GenerateDebugInformation="true"
 				AssemblyDebug="1"
@@ -76,7 +76,7 @@
 			/>
 			<Tool
 				Name="VCManifestTool"
-				OutputManifestFile="..\bin\$(TargetFileName).embed.manifest"
+				OutputManifestFile=".\Debug\$(TargetFileName).embed.manifest"
 				EmbedManifest="true"
 			/>
 			<Tool
@@ -97,7 +97,7 @@
 		</Configuration>
 		<Configuration
 			Name="Release|Win32"
-			OutputDirectory="..\bin"
+			OutputDirectory="..\bin\sELedit"
 			IntermediateDirectory=".\Release"
 			ConfigurationType="1"
 			CharacterSet="2"
@@ -138,10 +138,10 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="nvtt.lib"
-				OutputFile="..\bin\sELedit.exe"
+				AdditionalDependencies=""
+				OutputFile="..\bin\sELedit\sELedit.exe"
 				LinkIncremental="1"
-				AdditionalLibraryDirectories="..\pwAPI\lib"
+				AdditionalLibraryDirectories=""
 				ManifestFile=".\Release\$(TargetFileName).intermediate.manifest"
 				GenerateDebugInformation="false"
 				SubSystem="2"
@@ -154,7 +154,7 @@
 			/>
 			<Tool
 				Name="VCManifestTool"
-				OutputManifestFile="..\bin\$(TargetFileName).embed.manifest"
+				OutputManifestFile=".\Release\$(TargetFileName).embed.manifest"
 				EmbedManifest="true"
 			/>
 			<Tool
@@ -227,8 +227,25 @@
 				>
 				<File
 					RelativePath=".\ConfigWindow.resx"
+					SubType="Designer"
 					>
 				</File>
+			</File>
+			<File
+				RelativePath=".\eList.h"
+				>
+			</File>
+			<File
+				RelativePath=".\eList58.h"
+				>
+			</File>
+			<File
+				RelativePath=".\eListCollection.h"
+				>
+			</File>
+			<File
+				RelativePath=".\JoinWindow.cpp"
+				>
 			</File>
 			<File
 				RelativePath=".\JoinWindow.h"
@@ -255,6 +272,7 @@
 				>
 				<File
 					RelativePath=".\ReplaceWindow.resx"
+					SubType="Designer"
 					>
 				</File>
 			</File>
@@ -274,6 +292,7 @@
 			</File>
 			<File
 				RelativePath=".\icons.resx"
+				SubType="Designer"
 				>
 			</File>
 		</Filter>

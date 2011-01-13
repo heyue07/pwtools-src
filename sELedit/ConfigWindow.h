@@ -320,7 +320,7 @@ public ref class ConfigWindow : public System::Windows::Forms::Form
 	private: System::Void click_load(System::Object^  sender, System::EventArgs^  e)
 	{
 		OpenFileDialog^ cLoad = gcnew OpenFileDialog();
-		cLoad->InitialDirectory = Application::StartupPath + "\\sELedit\\configs";
+		cLoad->InitialDirectory = Application::StartupPath + "\\configs";
 		cLoad->Filter = "EL Configuration File (*.cfg)|*.cfg|All Files (*.*)|*.*";
 		if(cLoad->ShowDialog() == Windows::Forms::DialogResult::OK && File::Exists(cLoad->FileName))
 		{
@@ -354,7 +354,7 @@ public ref class ConfigWindow : public System::Windows::Forms::Form
 	private: System::Void click_save(System::Object^  sender, System::EventArgs^  e)
 	{
 		SaveFileDialog^ cSave = gcnew SaveFileDialog();
-		cSave->InitialDirectory = Application::StartupPath + "\\sELedit\\configs";
+		cSave->InitialDirectory = Application::StartupPath + "\\configs";
 		cSave->Filter = "EL Configuration File (*.cfg)|*.cfg|All Files (*.*)|*.*";
 		if(cSave->ShowDialog() == Windows::Forms::DialogResult::OK && cSave->FileName != "")
 		{

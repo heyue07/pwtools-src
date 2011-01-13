@@ -18,7 +18,7 @@
 	<Configurations>
 		<Configuration
 			Name="Debug|Win32"
-			OutputDirectory="..\bin"
+			OutputDirectory="..\bin\sNPCedit"
 			IntermediateDirectory=".\Debug"
 			ConfigurationType="1"
 			CharacterSet="2"
@@ -59,10 +59,10 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="nvtt.lib"
-				OutputFile="..\bin\sNPCedit_debug.exe"
+				AdditionalDependencies=""
+				OutputFile="..\bin\sNPCedit\sNPCedit_debug.exe"
 				LinkIncremental="1"
-				AdditionalLibraryDirectories="..\pwAPI\lib"
+				AdditionalLibraryDirectories=""
 				ManifestFile=".\Debug\$(TargetFileName).intermediate.manifest"
 				GenerateDebugInformation="true"
 				AssemblyDebug="1"
@@ -76,7 +76,7 @@
 			/>
 			<Tool
 				Name="VCManifestTool"
-				OutputManifestFile="..\bin\$(TargetFileName).embed.manifest"
+				OutputManifestFile=".\Debug\$(TargetFileName).embed.manifest"
 				EmbedManifest="true"
 			/>
 			<Tool
@@ -97,7 +97,7 @@
 		</Configuration>
 		<Configuration
 			Name="Release|Win32"
-			OutputDirectory="..\bin"
+			OutputDirectory="..\bin\sNPCedit"
 			IntermediateDirectory=".\Release"
 			ConfigurationType="1"
 			CharacterSet="2"
@@ -138,10 +138,10 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="nvtt.lib"
-				OutputFile="..\bin\sNPCedit.exe"
+				AdditionalDependencies=""
+				OutputFile="..\bin\sNPCedit\sNPCedit.exe"
 				LinkIncremental="1"
-				AdditionalLibraryDirectories="..\pwAPI\lib"
+				AdditionalLibraryDirectories=""
 				ManifestFile=".\Release\$(TargetFileName).intermediate.manifest"
 				GenerateDebugInformation="false"
 				SubSystem="2"
@@ -154,7 +154,7 @@
 			/>
 			<Tool
 				Name="VCManifestTool"
-				OutputManifestFile="..\bin\$(TargetFileName).embed.manifest"
+				OutputManifestFile=".\Release\$(TargetFileName).embed.manifest"
 				EmbedManifest="true"
 			/>
 			<Tool
@@ -222,6 +222,10 @@
 			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}"
 			>
 			<File
+				RelativePath=".\ecOffset.h"
+				>
+			</File>
+			<File
 				RelativePath=".\MainWindow.h"
 				FileType="3"
 				>
@@ -230,6 +234,10 @@
 					SubType="Designer"
 					>
 				</File>
+			</File>
+			<File
+				RelativePath=".\npcgen.h"
+				>
 			</File>
 		</Filter>
 		<Filter

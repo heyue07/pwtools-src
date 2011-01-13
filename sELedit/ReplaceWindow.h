@@ -1,6 +1,6 @@
 #pragma once
 
-#include "..\pwAPI\include\pw.h"
+#include "eListCollection.h"
 
 using namespace System;
 using namespace System::ComponentModel;
@@ -12,7 +12,7 @@ using namespace System::Drawing;
 public ref class ReplaceWindow : public System::Windows::Forms::Form
 {
 	public:
-		ReplaceWindow(PW::Data::Element::EListCollection^ ListCollection)
+	ReplaceWindow(eListCollection^ ListCollection)
 	{
 		eLC = ListCollection;
 		InitializeComponent();
@@ -30,17 +30,22 @@ public ref class ReplaceWindow : public System::Windows::Forms::Form
 		}
 	}
 
-	PW::Data::Element::EListCollection^ eLC;
+	eListCollection^ eLC;
 
 	private: System::Windows::Forms::Label^  label1;
-	private: System::Windows::Forms::TextBox^  textBox_list;
-	private: System::Windows::Forms::TextBox^  textBox_item;
+private: System::Windows::Forms::TextBox^  textBox_list;
+private: System::Windows::Forms::TextBox^  textBox_item;
+
+
 	private: System::Windows::Forms::Label^  label2;
-	private: System::Windows::Forms::TextBox^  textBox_field;
+private: System::Windows::Forms::TextBox^  textBox_field;
+
 	private: System::Windows::Forms::Label^  label3;
-	private: System::Windows::Forms::TextBox^  textBox_oldValue;
+private: System::Windows::Forms::TextBox^  textBox_oldValue;
+
 	private: System::Windows::Forms::Label^  label4;
-	private: System::Windows::Forms::TextBox^  textBox_newValue;
+private: System::Windows::Forms::TextBox^  textBox_newValue;
+
 	private: System::Windows::Forms::Label^  label5;
 	private: System::Windows::Forms::Button^  button_replace;
 	private: System::Windows::Forms::Button^  button_cancel;

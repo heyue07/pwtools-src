@@ -12,8 +12,8 @@ ColorExpansionBar::ColorExpansionBar(void)
 	this->SetStyle(ControlStyles::DoubleBuffer | ControlStyles::UserPaint | ControlStyles::AllPaintingInWmPaint, true);
 	this->UpdateStyles();
 
-	pictureBox_SliderMax->Image = (Drawing::Bitmap^)((gcnew Resources::ResourceManager("sTools.icons", Reflection::Assembly::GetExecutingAssembly()))->GetObject("sliderV"));
-	pictureBox_SliderMin->Image = (Drawing::Bitmap^)((gcnew Resources::ResourceManager("sTools.icons", Reflection::Assembly::GetExecutingAssembly()))->GetObject("sliderV"));
+	pictureBox_SliderMax->Image = (Drawing::Bitmap^)((gcnew Resources::ResourceManager("sTOOLS.icons", Reflection::Assembly::GetExecutingAssembly()))->GetObject("sliderV"));
+	pictureBox_SliderMin->Image = (Drawing::Bitmap^)((gcnew Resources::ResourceManager("sTOOLS.icons", Reflection::Assembly::GetExecutingAssembly()))->GetObject("sliderV"));
 
 	minValue = 0;
 	maxValue = 255;
@@ -28,7 +28,7 @@ ColorExpansionBar::ColorExpansionBar(void)
 
 	InitializeContextMenu();
 	InitializeColorSchemes();
-	ColorScheme = ColorSchemes[1];
+	ColorScheme = ColorSchemes[0];
 }
 
 ColorExpansionBar::~ColorExpansionBar()
