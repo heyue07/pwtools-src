@@ -1,0 +1,694 @@
+#!/bin/bash
+
+show_help()
+{
+  echo "
+Usage: ./configure [options]
+
+Options:
+
+  -h, --help                Display this help and exit.
+  -i, --init                Initialize a new project structure with
+                            default configuration and source files.
+                            The project will be titled hello-world.
+                            All project settings can be changed in the
+                            generated 'config_default.sh' script.
+      --config-NAME         Use the configuration script config_NAME.sh
+                            to generate the Makefile.
+                            Example: '--config-x86-linux-gcc' will generate
+                            a makefile based on 'config_x86-linux-gcc.sh'
+                            [--config-default]"
+    for CONFIGSCRIPT in $(find -maxdepth 1 -type f -name 'config_*.sh')
+    do
+        #if [ $CONFIGSCRIPT != "./config_default.sh" ]
+        #then
+            echo "      $(echo $CONFIGSCRIPT | sed 's|.*config_|--config-|g;s|\.sh||g')"
+        #fi
+    done
+    echo "
+      --prefix=\"DIRECTORY\"  Install distribution files in DIRECTORY
+                            [/usr/local]
+"
+
+  # http://www.gnu.org/prep/standards/html_node/Configuration.html
+  # http://www.sourceware.org/autobook/autobook/autobook_17.html#SEC17
+  # http://www.gnu.org/software/automake/manual/html_node/Cross_002dCompilation.html
+
+  exit
+}
+
+initialize()
+{
+    PROJECT=hello-world
+
+    rm -r -f build include lib obj res src config_*.sh Make* make*
+
+    mkdir -p build/linux/bin
+    mkdir -p build/msw
+    mkdir -p include
+    mkdir -p lib/linux
+    mkdir -p lib/msw
+    mkdir -p obj
+    mkdir -p res
+    mkdir -p src
+
+    echo "#include <stdio.h>
+
+int main();" > src/main.h
+
+    echo "#include \"main.h\"
+
+int main()
+{
+    printf(\"Hello World\\n\");
+    return 0;
+}" > src/main.cpp
+
+    echo "AAA ICON \"app.ico\"" > res/icons.rc
+
+    echo "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>
+<assembly xmlns=\"urn:schemas-microsoft-com:asm.v1\" manifestVersion=\"1.0\">
+<assemblyIdentity
+    version=\"0.64.1.0\"
+    processorArchitecture=\"x86\"
+    name=\"Controls\"
+    type=\"win32\"
+/>
+<description>wxWindows application</description>
+<dependency>
+    <dependentAssembly>
+        <assemblyIdentity
+            type=\"win32\"
+            name=\"Microsoft.Windows.Common-Controls\"
+            version=\"6.0.0.0\"
+            processorArchitecture=\"X86\"
+            publicKeyToken=\"6595b64144ccf1df\"
+            language=\"*\"
+        />
+    </dependentAssembly>
+</dependency>
+</assembly>" > res/app.manifest
+
+    echo "#include \"icons.rc\"
+
+// embed a version 6 manifest file to use ComCtl32.dll (modern WinXP+ gui style)
+1 MANIFEST \"app.manifest\"" > res/app.rc
+
+    # FIXME: this is not working in mingw/msys the $'\x00' char is not printed to file
+printf %c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c $'\x42' $'\x5A' $'\x68' $'\x36' $'\x31' $'\x41' $'\x59' $'\x26' $'\x53' $'\x59' $'\xF1' $'\x0C' $'\x91' $'\x07' $'\x00' $'\x01' > res/app.ico.tar.bz2
+printf %c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c $'\x3E' $'\xFF' $'\xD5' $'\xFE' $'\x5C' $'\x6A' $'\xA0' $'\x5D' $'\x43' $'\x7B' $'\x80' $'\x4C' $'\x00' $'\x00' $'\x20' $'\x68' >> res/app.ico.tar.bz2
+printf %c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c $'\x61' $'\xDE' $'\x20' $'\x40' $'\x11' $'\x01' $'\x00' $'\x40' $'\x00' $'\x00' $'\x40' $'\x00' $'\x09' $'\xB0' $'\x01' $'\x4C' >> res/app.ico.tar.bz2
+printf %c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c $'\x24' $'\x09' $'\x22' $'\x9A' $'\xA6' $'\xD4' $'\xF6' $'\xA9' $'\xB5' $'\x3D' $'\x04' $'\x64' $'\xCD' $'\x10' $'\xD1' $'\x81' >> res/app.ico.tar.bz2
+printf %c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c $'\x1A' $'\x61' $'\x33' $'\x4F' $'\x48' $'\x60' $'\x00' $'\x1A' $'\x00' $'\x03' $'\x26' $'\x80' $'\x00' $'\x03' $'\x40' $'\x22' >> res/app.ico.tar.bz2
+printf %c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c $'\x48' $'\xA3' $'\x53' $'\xD4' $'\x1A' $'\x00' $'\x00' $'\x00' $'\x34' $'\x0D' $'\x00' $'\x11' $'\xB6' $'\xF9' $'\xC8' $'\xF1' >> res/app.ico.tar.bz2
+printf %c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c $'\xF0' $'\x81' $'\xFB' $'\x5C' $'\x25' $'\x3B' $'\x2B' $'\x9F' $'\x73' $'\x3D' $'\x6C' $'\x11' $'\x7A' $'\xE6' $'\x20' $'\xC1' >> res/app.ico.tar.bz2
+printf %c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c $'\xFE' $'\xC2' $'\xA6' $'\xE8' $'\x92' $'\x72' $'\x76' $'\x11' $'\xA6' $'\x5A' $'\x80' $'\xCD' $'\x14' $'\x32' $'\xB2' $'\x42' >> res/app.ico.tar.bz2
+printf %c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c $'\x00' $'\x42' $'\x44' $'\x72' $'\x43' $'\x2B' $'\x0B' $'\xC0' $'\xA8' $'\x48' $'\x6A' $'\xC7' $'\x48' $'\x34' $'\x52' $'\x54' >> res/app.ico.tar.bz2
+printf %c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c $'\x4C' $'\x31' $'\xA0' $'\x17' $'\x1F' $'\xC8' $'\x01' $'\xF9' $'\x60' $'\xA5' $'\x7F' $'\x6B' $'\x13' $'\xB4' $'\x95' $'\x7D' >> res/app.ico.tar.bz2
+printf %c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c $'\x1F' $'\xB6' $'\xE4' $'\x7C' $'\xC4' $'\x30' $'\x6B' $'\xA9' $'\xBF' $'\x14' $'\xDB' $'\xD8' $'\xAC' $'\x80' $'\xF5' $'\x86' >> res/app.ico.tar.bz2
+printf %c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c $'\x42' $'\xC1' $'\xCD' $'\x37' $'\x61' $'\x33' $'\x19' $'\xED' $'\xA5' $'\x39' $'\xC9' $'\x73' $'\xCC' $'\x42' $'\xCE' $'\x17' >> res/app.ico.tar.bz2
+printf %c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c $'\xCF' $'\xE5' $'\x99' $'\x0D' $'\x5C' $'\x7D' $'\x20' $'\x8D' $'\x08' $'\x65' $'\x77' $'\x17' $'\xE6' $'\xFE' $'\x9A' $'\xCE' >> res/app.ico.tar.bz2
+printf %c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c $'\x63' $'\xB0' $'\xA1' $'\xC3' $'\x3C' $'\xD3' $'\x85' $'\xA6' $'\x14' $'\x4E' $'\x6D' $'\x1C' $'\xA6' $'\x0E' $'\xB8' $'\x54' >> res/app.ico.tar.bz2
+printf %c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c $'\xE3' $'\xBB' $'\x98' $'\xD0' $'\x54' $'\xAE' $'\xD3' $'\x71' $'\x42' $'\x34' $'\x34' $'\x3C' $'\x9D' $'\xE8' $'\x28' $'\x86' >> res/app.ico.tar.bz2
+printf %c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c $'\xD1' $'\x06' $'\x41' $'\x21' $'\x6F' $'\x10' $'\x4C' $'\xA5' $'\xDB' $'\xAC' $'\xDC' $'\xF7' $'\x96' $'\x16' $'\x6E' $'\x32' >> res/app.ico.tar.bz2
+printf %c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c $'\x59' $'\x3B' $'\x65' $'\xAA' $'\x52' $'\x94' $'\x4E' $'\xDF' $'\x08' $'\x47' $'\x02' $'\x2F' $'\x6A' $'\x49' $'\x95' $'\xAD' >> res/app.ico.tar.bz2
+printf %c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c $'\x06' $'\x0A' $'\x17' $'\x10' $'\x02' $'\xEE' $'\x82' $'\x59' $'\x52' $'\x85' $'\x4A' $'\x4B' $'\x00' $'\x59' $'\xA0' $'\x0A' >> res/app.ico.tar.bz2
+printf %c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c $'\x84' $'\x52' $'\x90' $'\x4A' $'\x02' $'\xC4' $'\x06' $'\x5A' $'\x88' $'\xA9' $'\x50' $'\xA0' $'\x61' $'\x52' $'\x29' $'\x00' >> res/app.ico.tar.bz2
+printf %c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c $'\xB5' $'\xA7' $'\x24' $'\x41' $'\x28' $'\x03' $'\x2F' $'\xBA' $'\xBF' $'\xD7' $'\x03' $'\x67' $'\xFB' $'\x15' $'\xFF' $'\x17' >> res/app.ico.tar.bz2
+printf %c%c%c%c%c%c%c%c%c $'\x72' $'\x45' $'\x38' $'\x50' $'\x90' $'\xF1' $'\x0C' $'\x91' $'\x07' >> res/app.ico.tar.bz2
+
+    tar -xjf res/app.ico.tar.bz2 -O > res/app.ico
+    rm -f res/app.ico.tar.bz2
+
+    echo "#!/bin/sh
+
+# package settings (tgz, deb)
+PKGNAME=\"$PROJECT\"
+PKGVERSION=\"1.0\"
+PKGSECTION=\"accessories\"
+PKGAUTHOR=\"nobody <nobody@mail.com>\"
+PKGHOMEPAGE=\"http://\"
+PKGDEPENDS=\"\"
+PKGDESCRIPTION=\"Title of Hello World
+ detailed description of hello world
+ each line is indented by a space
+ blank lines require a dot after the space
+ .
+ features:
+ .
+ - alpha
+ - beta
+ - gamma\"
+
+# source files (space seperated) which should be searched in the source directory and beeing compiled (i.e. *.c *.cxx *.cpp main.cpp)
+SRCPATTERN=\"*.c main.cpp\"
+# directory which contains all source and header files
+SRCDIR=\"src\"
+# resource files (*windows only, must end with '.rc', space seperated) which should be searched in the resource directory and beeing compiled (i.e. *.rc app.rc)
+RCPATTERN=\"\"
+# directory which contains all windows resource files (*windows only)
+RCDIR=\"\"
+# directory where the generated object files should be stored
+OBJDIR=\"obj\"
+# directory which contains files for re-distribution (system root level based)
+DISTROOT=\"build/linux\"
+# path and name of the generated binary file (usually inside a sub-directory of the distribution root)
+BINFILE=\"\$DISTROOT/bin/$PROJECT\"
+
+# compiler to use
+CC=\"g++\"
+# compiler flags, search directories (prefix: -I)
+CFLAGS=\"
+    -c
+    -Wall
+    -O2
+    -Iinclude
+    \"
+
+# windows resource compiler to use
+RC=\"\"
+# resource compiler flags, search directories (prefix: -I)
+RCFLAGS=\"\"
+
+# linker to use
+LD=\"g++\"
+# linker flags
+LDFLAGS=\"
+    -s
+    \"
+# linker libraries: directly (path/*.a), search directories (prefix: -L), libraries (prefix -l)
+LDLIBS=\"
+    -Llib/linux
+    \"" > config_default.sh
+
+    echo "#!/bin/sh
+
+# import setings from config-default
+. ./config_default.sh
+
+# overwrite settings from config-default
+RCPATTERN=\"app.rc\"
+RCDIR=\"res\"
+DISTROOT=\"build/msw\"
+BINFILE=\"\$DISTROOT/bin/$PROJECT.exe\"
+
+CC=\"mingw32-g++.exe\"
+CFLAGS=\"
+    -c
+    -Wall
+    -O2
+    -Iinclude
+    \"
+
+RC=\"windres.exe\"
+RCFLAGS=\"
+    -J rc
+    -O coff
+    -F pe-i386
+    \"
+
+LD=\"mingw32-g++.exe\"
+LDFLAGS=\"
+    -s
+    -static-libgcc
+    -static-libstdc++
+    \"
+LDLIBS=\"
+    -Llib/msw
+    \"" > config_mingw.sh
+
+    echo "Initialization of project '$PROJECT' complete."
+    echo "You can now change project settings in the generated"
+    echo "configuration files: 'congig_*.sh'"
+
+    exit
+}
+
+check_command()
+{
+    $@ >/dev/null 2>&1
+    if [ $? = 0 ]
+    then
+        $ECHO_ESC "$AF_GREEN ok $AF_RESET"
+    else
+        $ECHO_ESC "$AF_RED failed $AF_RESET"
+        return 1
+    fi
+}
+
+check_env()
+{
+    printf "  checking sh ... "
+    ECHO_NOLB="printf"
+    ECHO_ESC="echo"
+    if [ -n "$BASH_VERSION" ]
+    then
+        ECHO_ESC="echo -e"
+        $ECHO_ESC "\033[32mbash\033[0m"
+    elif [ -n "$ZSH_VERSION" ]
+    then
+        ECHO_ESC="echo"
+        $ECHO_ESC "\033[31mzsh\033[0m"
+        return 1
+    else
+        ECHO_ESC="echo"
+        $ECHO_ESC "\033[33munknown\033[0m"
+    fi
+
+    tput -V >/dev/null 2>&1
+    if [ $? = 0 ]
+    then
+        AF_RED=$(tput setaf 1)
+        AF_GREEN=$(tput setaf 2)
+        AF_YELLOW=$(tput setaf 3)
+        AF_RESET=$(tput sgr0)
+    else
+        AF_RED=$($ECHO_ESC "\033[31m")
+        AF_GREEN=$($ECHO_ESC "\033[32m")
+        AF_YELLOW=$($ECHO_ESC "\033[33m")
+        AF_RESET=$($ECHO_ESC "\033[0m")
+    fi
+
+    #$ECHO_NOLB "  checking chmod ... "
+    #check_command "chmod --version"
+
+    #$ECHO_NOLB "  checking wc ... "
+    #check_command "wc --version"
+
+    $ECHO_NOLB "  checking find ... "
+    check_command "find --version"
+
+    $ECHO_NOLB "  checking du ... "
+    check_command "du --version"
+
+    $ECHO_NOLB "  checking grep ... "
+    check_command "grep --version"
+
+    $ECHO_NOLB "  checking sed ... "
+    check_command "sed --version"
+
+    $ECHO_NOLB "  checking sort ... "
+    check_command "sort --version"
+
+    $ECHO_NOLB "  checking uniq ... "
+    check_command "uniq --version"
+
+    #$ECHO_NOLB "  checking uname ... "
+    #check_command "uname --version"
+
+    $ECHO_NOLB "  checking tar ... "
+    check_command "tar --version"
+
+    $ECHO_NOLB "  checking make ... "
+    check_command "make --version"
+
+    $ECHO_NOLB "  checking gcc ... "
+    check_command "gcc --version"
+
+    $ECHO_NOLB "  checking ld ... "
+    check_command "ld --version"
+}
+
+default_config()
+{
+    PKGNAME="no-name"
+    PKGVERSION="1.0"
+    PKGSECTION="none"
+    PKGAUTHOR="nobody <nobody@nowhere>"
+    PKGHOMEPAGE="http://"
+    PKGDEPENDS=""
+    PKGDESCRIPTION="Title
+ Description"
+    SRCPATTERN="*.c *.cc *.c++ *.cxx *.cpp"
+    SRCDIR="src"
+    RCPATTERN="*.rc"
+    RCDIR="res"
+    OBJDIR="obj"
+    DISTROOT=""
+    BINFILE="bin/no-name"
+    CC="gcc"
+    CFLAGS="-c -Wall -O2"
+    RC=""
+    RCFLAGS=""
+    LD="gcc"
+    LDFLAGS="-s"
+    LDLIBS=""
+}
+
+load_config()
+{
+    $ECHO_NOLB "  checking file access ... "
+    if [ -f $CONFIGSCRIPT ]
+    then
+        echo "$AF_GREEN ok $AF_RESET"
+        . $CONFIGSCRIPT
+    else
+        echo "$AF_RED failed $AF_RESET"
+        return 1
+    fi
+
+    $ECHO_NOLB "  checking source directory ($SRCDIR) ... "
+    if [ -d "$SRCDIR" ]
+    then
+        echo "$AF_GREEN ok $AF_RESET"
+        $ECHO_NOLB "  checking source files ($SRCPATTERN) ... "
+        if [ $(find $SRCDIR -type f -name $(echo $SRCPATTERN | sed -e "s| | -or -name |g") | wc -l) != 0 ]
+        then
+            echo "$AF_GREEN ok $AF_RESET"
+        else
+            echo "$AF_RED none found $AF_RESET"
+            return 1
+        fi
+    else
+        #mkdir -p "$SRCDIR"
+        #if [ -d "$SRCDIR" ]
+        #then
+        #
+        #else
+            echo "$AF_RED invalid directory $AF_RESET"
+            return 1
+        #fi
+    fi
+
+    $ECHO_NOLB "  checking object directory ($OBJDIR) ... "
+    if [ -d "$OBJDIR" ]
+    then
+        echo "$AF_GREEN ok $AF_RESET"
+    else
+        mkdir -p "$OBJDIR"
+        if [ -d "$OBJDIR" ]
+        then
+            echo "$AF_YELLOW not found $AF_RESET -> $AF_GREEN created $AF_RESET"
+        else
+            echo "$AF_RED invalid directory $AF_RESET"
+            return 1
+        fi
+    fi
+
+    BINPATH=$(echo $BINFILE | sed -e 's|/[^/]*$||g')
+    $ECHO_NOLB "  checking binary file path ($BINPATH) ... "
+    if [ -d "$BINPATH" ]
+    then
+        echo "$AF_GREEN ok $AF_RESET"
+    else
+        mkdir -p "$BINPATH"
+        if [ -d "$BINPATH" ]
+        then
+            echo "$AF_YELLOW not found $AF_RESET -> $AF_GREEN created $AF_RESET"
+        else
+            echo "$AF_RED invalid path $AF_RESET"
+            return 1
+        fi
+    fi
+
+    $ECHO_NOLB "  checking distribution root ($DISTROOT) ... "
+    if [ -d "$DISTROOT" ]
+    then
+        echo "$AF_GREEN ok $AF_RESET"
+        $ECHO_NOLB "  checking distribution content ($DISTROOT/*) ... "
+        if [ $(ls $DISTROOT | wc -l) != 0 ]
+        then
+            echo "$AF_GREEN ok $AF_RESET"
+        else
+            echo "$AF_YELLOW none found $AF_RESET -> $AF_GREEN ignored $AF_RESET"
+            DISTROOT=""
+        fi
+    else
+        echo "$AF_YELLOW invalid directory $AF_RESET -> $AF_GREEN ignored $AF_RESET"
+        DISTROOT=""
+    fi
+
+    $ECHO_NOLB "  checking compiler ($CC) ... "
+    check_command "$CC -v"
+
+    $ECHO_NOLB "  checking includes (-I) ... "
+    check_command "ls $(echo '$CFLAGS' | grep -o '\-I\S*' | sed -e 's|-I||g')"
+
+    # NOTE: check for resource compiler disabled because on linux none will be found...
+    $ECHO_NOLB "  checking rc-compiler ($RC) ... "
+    echo "$AF_YELLOW skipped $AF_RESET"
+    #check_command "$RC -V"
+
+    $ECHO_NOLB "  checking rc-includes (-I) ... "
+    check_command "ls $(echo '$RCFLAGS' | grep -o '\-I\S*' | sed -e 's|-I||g')"
+
+    $ECHO_NOLB "  checking linker ($LD) ... "
+    check_command "$LD -v"
+
+    $ECHO_NOLB "  checking libraries (-L, -l, /*) ... "
+    check_command "ld -L/lib -lc $(echo '$LDLIBS' | grep -o '\s\/\S*\|[\-][Ll]\S*') -o null.bin"
+    rm -f "null.bin"
+}
+
+write_makefile_header()
+{
+    $ECHO_ESC "# Makefile generated by makebreed" >> $MAKEFILE
+    $ECHO_ESC "# http://makebreed.googlecode.com" >> $MAKEFILE
+    $ECHO_ESC "" >> $MAKEFILE
+    $ECHO_ESC "# Creation Time: '$(date -R -u)'" >> $MAKEFILE
+    $ECHO_ESC "" >> $MAKEFILE
+}
+
+write_makefile_configuration()
+{
+    $ECHO_ESC "PKGNAME = $PKGNAME" >> $MAKEFILE
+    $ECHO_ESC "PKGVERSION = $PKGVERSION" >> $MAKEFILE
+    $ECHO_ESC "PKGSECTION = $PKGSECTION" >> $MAKEFILE
+    $ECHO_ESC "PKGAUTHOR = $PKGAUTHOR" >> $MAKEFILE
+    $ECHO_ESC "PKGHOMEPAGE = $PKGHOMEPAGE" >> $MAKEFILE
+    $ECHO_ESC "PKGDEPENDS = $(echo $PKGDEPENDS | sed -e 's|([^)]*)||g;s|,||g;s|  | |g')" >> $MAKEFILE
+    $ECHO_ESC "PKGDESCRIPTION = $PKGDESCRIPTION" | sed 's|$|\\n\\|' >> $MAKEFILE
+    $ECHO_ESC " ." >> $MAKEFILE
+    $ECHO_ESC "" >> $MAKEFILE
+    $ECHO_ESC "SRCPATTERN = $SRCPATTERN" >> $MAKEFILE
+    $ECHO_ESC "SRCDIR = $SRCDIR" >> $MAKEFILE
+    $ECHO_ESC "RCPATTERN = $RCPATTERN" >> $MAKEFILE
+    $ECHO_ESC "RCDIR = $RCDIR" >> $MAKEFILE
+    $ECHO_ESC "OBJDIR = $OBJDIR" >> $MAKEFILE
+
+    if [ "$DISTROOT" ]
+    then
+        $ECHO_ESC "DISTROOT = $DISTROOT" >> $MAKEFILE
+    else
+        $ECHO_ESC "DISTROOT = /dev/null" >> $MAKEFILE
+    fi
+
+    $ECHO_ESC "BINFILE = $BINFILE" >> $MAKEFILE
+    $ECHO_ESC "" >> $MAKEFILE
+    $ECHO_ESC "CC = $CC" >> $MAKEFILE
+    $ECHO_ESC "CFLAGS = $(echo $CFLAGS | sed -e 's|[ ]+| |g')" >> $MAKEFILE
+    $ECHO_ESC "RC = $RC" >> $MAKEFILE
+    $ECHO_ESC "RCFLAGS = $(echo $RCFLAGS | sed -e 's|[ ]+| |g')" >> $MAKEFILE
+    $ECHO_ESC "LD = $LD" >> $MAKEFILE
+    $ECHO_ESC "LDFLAGS = $(echo $LDFLAGS | sed -e 's|[ ]+| |g')" >> $MAKEFILE
+    $ECHO_ESC "LDLIBS = $(echo $LDLIBS | sed -e 's|[ ]+| |g')" >> $MAKEFILE
+    $ECHO_ESC "" >> $MAKEFILE
+    $ECHO_ESC "SRCFILES := \$(shell find \$(SRCDIR) -type f -name '' \$(addprefix -or -name , \$(SRCPATTERN)))" >> $MAKEFILE
+    $ECHO_ESC "RCFILES := \$(shell find \$(RCDIR) -type f -name '' \$(addprefix -or -name , \$(RCPATTERN)))" >> $MAKEFILE
+    $ECHO_ESC "OBJFILES := \$(patsubst \$(SRCDIR)/%, \$(OBJDIR)/%.o, \$(SRCFILES)) \$(patsubst \$(RCDIR)/%, \$(OBJDIR)/%.x, \$(RCFILES))" >> $MAKEFILE
+    $ECHO_ESC "DEPFILES := \$(patsubst \$(SRCDIR)/%, \$(OBJDIR)/%.d, \$(SRCFILES)) \$(patsubst \$(RCDIR)/%, \$(OBJDIR)/%.d, \$(RCFILES))" >> $MAKEFILE
+    $ECHO_ESC "DISTFILES := \$(patsubst \$(DISTROOT)/%, %, \$(shell find \$(DISTROOT) -type f))" >> $MAKEFILE
+    $ECHO_ESC "DISTDIRECTORIES := \$(patsubst \$(DISTROOT)/%, %, \$(shell find \$(DISTROOT) -type d -empty))" >> $MAKEFILE
+    $ECHO_ESC "" >> $MAKEFILE
+    $ECHO_ESC "DESTDIR = " >> $MAKEFILE
+    $ECHO_ESC "PREFIX = $INSTALLDIR" >> $MAKEFILE
+    $ECHO_ESC "" >> $MAKEFILE
+}
+
+write_makefile_rule_build()
+{
+    $ECHO_ESC "all: \$(BINFILE)" >> $MAKEFILE
+    $ECHO_ESC "" >> $MAKEFILE
+    $ECHO_ESC "\$(BINFILE): \$(OBJFILES)" >> $MAKEFILE
+    $ECHO_ESC "\t@echo " >> $MAKEFILE
+    $ECHO_ESC "\t@\$(shell mkdir -p \$(dir \$@))" >> $MAKEFILE
+    # TODO: update for use with ar to create static library files...
+    $ECHO_ESC "\t\$(LD) \$(LDFLAGS) -o \$@ \$^ \$(LDLIBS)" >> $MAKEFILE
+    $ECHO_ESC "" >> $MAKEFILE
+    $ECHO_ESC "\$(CURDIR)/\$(OBJDIR)/%.x \$(CURDIR)/\$(RCDIR)/%.x \$(RCDIR)/%.x: \$(OBJDIR)/%.x" >> $MAKEFILE
+    $ECHO_ESC "\$(OBJDIR)/%.x: \$(RCDIR)/%" >> $MAKEFILE
+    $ECHO_ESC "\t@echo " >> $MAKEFILE
+    $ECHO_ESC "\t@\$(shell mkdir -p \$(dir \$@))" >> $MAKEFILE
+    $ECHO_ESC "\t\$(RC) \$(RCFLAGS) -o \$@ -i \$<" >> $MAKEFILE
+    $ECHO_ESC "\t@cp \$< \$<.cpp" >> $MAKEFILE
+    $ECHO_ESC "\t-@\$(CC) \$(CFLAGS) -MM -MT \$@ \$<.cpp | sed 's|\$<.cpp|\$<|g' > \$(OBJDIR)/\$*.d" >> $MAKEFILE
+    $ECHO_ESC "\t@rm -f \$<.cpp" >> $MAKEFILE
+    $ECHO_ESC "" >> $MAKEFILE
+    $ECHO_ESC "\$(CURDIR)/\$(OBJDIR)/%.o \$(CURDIR)/\$(SRCDIR)/%.o \$(SRCDIR)/%.o: \$(OBJDIR)/%.o" >> $MAKEFILE
+    $ECHO_ESC "\$(OBJDIR)/%.o: \$(SRCDIR)/%" >> $MAKEFILE
+    $ECHO_ESC "\t@echo " >> $MAKEFILE
+    $ECHO_ESC "\t@\$(shell mkdir -p \$(dir \$@))" >> $MAKEFILE
+    $ECHO_ESC "\t\$(CC) \$(CFLAGS) -o \$@ \$<" >> $MAKEFILE
+    $ECHO_ESC "\t-@\$(CC) \$(CFLAGS) -MM -MT \$@ \$< > \$(OBJDIR)/\$*.d" >> $MAKEFILE
+    $ECHO_ESC "" >> $MAKEFILE
+    $ECHO_ESC "-include \$(DEPFILES)" >> $MAKEFILE
+    $ECHO_ESC "" >> $MAKEFILE
+}
+
+write_makefile_rule_clean()
+{
+    $ECHO_ESC "clean:" >> $MAKEFILE
+    $ECHO_ESC "\t@rm -f \$(DEPFILES) \$(OBJFILES) \$(BINFILE) *.tar.gz *.changes *.dsc *.deb" >> $MAKEFILE
+    $ECHO_ESC "" >> $MAKEFILE
+}
+
+write_makefile_rule_dist_installer()
+{
+    $ECHO_ESC "install:" >> $MAKEFILE
+    $ECHO_ESC "\t@mkdir -p \$(DESTDIR)\$(PREFIX) 2> /dev/null" >> $MAKEFILE
+    $ECHO_ESC "\t@cp -v -r \$(DISTROOT)/* \$(DESTDIR)\$(PREFIX)" >> $MAKEFILE
+    $ECHO_ESC "" >> $MAKEFILE
+    $ECHO_ESC "uninstall:" >> $MAKEFILE
+    $ECHO_ESC "\t@rm -v -f \$(addprefix \$(DESTDIR)\$(PREFIX)/, \$(DISTFILES)) 2> /dev/null" >> $MAKEFILE
+    $ECHO_ESC "\t@rmdir -p --ignore-fail-on-non-empty \$(addprefix \$(DESTDIR)\$(PREFIX)/, \$(DISTDIRECTORIES)) 2> /dev/null" >> $MAKEFILE
+    $ECHO_ESC "\t@rmdir -p --ignore-fail-on-non-empty \$(dir \$(addprefix \$(DESTDIR)\$(PREFIX)/, \$(DISTFILES))) 2> /dev/null" >> $MAKEFILE
+    $ECHO_ESC "" >> $MAKEFILE
+}
+
+write_makefile_rule_dist_tgz()
+{
+    $ECHO_ESC "TGZPKG := \$(PKGNAME)-\$(PKGVERSION).tar.gz" >> $MAKEFILE
+    $ECHO_ESC "" >> $MAKEFILE
+    $ECHO_ESC "tgz:" >> $MAKEFILE
+    $ECHO_ESC "\t@tar -czvf \$(TGZPKG) --transform 's,^,\$(PKGNAME)-\$(PKGVERSION)/,' --exclude='make*' --exclude='Make*' --exclude='*.tar.gz' --exclude='*.dsc' --exclude='*.deb' --exclude='\$(BINFILE)' --exclude='\$(OBJDIR)/*' *" >> $MAKEFILE
+    $ECHO_ESC "" >> $MAKEFILE
+}
+
+write_makefile_rule_dist_deb()
+{
+    if [[ $(grep '^DISTRIB_' /etc/*release | wc -l) > 1 ]]
+    then
+        $ECHO_ESC "DEBPKG := \$(PKGNAME)_\$(PKGVERSION)_\$(shell dpkg --print-architecture)_\$(shell grep '^DISTRIB_ID=' /etc/*release | sed 's|\"||g' | cut -d '=' -f 2 | tr '[:upper:]' '[:lower:]')-\$(shell grep '^DISTRIB_RELEASE=' /etc/*release | sed 's|\"||g' | cut -d '=' -f 2).deb" >> $MAKEFILE
+    else
+        $ECHO_ESC "DEBPKG := \$(PKGNAME)_\$(PKGVERSION)_\$(shell dpkg --print-architecture)_\$(shell grep '^ID=' /etc/*release | sed 's|\"||g' | cut -d '=' -f 2 | tr '[:upper:]' '[:lower:]')-\$(shell grep '^VERSION_ID=' /etc/*release | sed 's|\"||g' | cut -d '=' -f 2).deb" >> $MAKEFILE
+    fi
+    $ECHO_ESC "" >> $MAKEFILE
+    $ECHO_ESC "deb: all" >> $MAKEFILE
+    $ECHO_ESC "\t@mkdir -p deb/\$(patsubst /%,%,\$(DESTDIR)\$(PREFIX)) 2> /dev/null" >> $MAKEFILE
+    $ECHO_ESC "\t@mkdir -p deb/DEBIAN 2> /dev/null" >> $MAKEFILE
+    $ECHO_ESC "\t@cp -r \$(DISTROOT)/* deb/\$(patsubst /%,%,\$(DESTDIR)\$(PREFIX))" >> $MAKEFILE
+    $ECHO_ESC "\t@md5sum \$(shell find \$(DISTROOT) -type f) | sed 's|\$(DISTROOT)|\$(patsubst /%,%,\$(DESTDIR)\$(PREFIX))|g' > deb/DEBIAN/md5sums" >> $MAKEFILE
+    $ECHO_ESC "\t@echo 'Package: \$(PKGNAME)' > deb/DEBIAN/control" >> $MAKEFILE
+    $ECHO_ESC "\t@echo 'Version: \$(PKGVERSION)' >> deb/DEBIAN/control" >> $MAKEFILE
+    $ECHO_ESC "\t@echo 'Section: \$(PKGSECTION)' >> deb/DEBIAN/control" >> $MAKEFILE
+    $ECHO_ESC "\t@echo 'Architecture: \$(shell dpkg --print-architecture)' >> deb/DEBIAN/control" >> $MAKEFILE
+    $ECHO_ESC "\t@echo 'Installed-Size: \$(shell du -k -c \$(DISTROOT) | grep 'total' | sed -e 's|\s*total||g')' >> deb/DEBIAN/control" >> $MAKEFILE
+    $ECHO_ESC "\t@echo 'Depends: \$(RESOLVE_BIN_PKG_DEPS)' | sed -e 's|,\\s*\$\$||g' >> deb/DEBIAN/control" >> $MAKEFILE
+    $ECHO_ESC "\t@echo 'Maintainer: \$(PKGAUTHOR)' >> deb/DEBIAN/control" >> $MAKEFILE
+    $ECHO_ESC "\t@echo 'Priority: optional' >> deb/DEBIAN/control" >> $MAKEFILE
+    $ECHO_ESC "\t@echo 'Homepage: \$(PKGHOMEPAGE)' >> deb/DEBIAN/control" >> $MAKEFILE
+    $ECHO_ESC "\t@echo 'Description: \$(PKGDESCRIPTION)' >> deb/DEBIAN/control" >> $MAKEFILE
+    $ECHO_ESC "\t@echo '#!/bin/sh' > deb/DEBIAN/postinst" >> $MAKEFILE
+    $ECHO_ESC "\t@echo '' >> deb/DEBIAN/postinst" >> $MAKEFILE
+    $ECHO_ESC "\t@echo 'if [ -x /usr/bin/update-menus ] ; then update-menus ; fi' >> deb/DEBIAN/postinst" >> $MAKEFILE
+    $ECHO_ESC "\t@echo 'if [ -x /usr/bin/update-mime ] ; then update-mime ; fi' >> deb/DEBIAN/postinst" >> $MAKEFILE
+    $ECHO_ESC "\t@chmod 0755 deb/DEBIAN/postinst" >> $MAKEFILE
+    $ECHO_ESC "\t@echo '#!/bin/sh' > deb/DEBIAN/postrm" >> $MAKEFILE
+    $ECHO_ESC "\t@echo '' >> deb/DEBIAN/postrm" >> $MAKEFILE
+    $ECHO_ESC "\t@echo 'if [ -x /usr/bin/update-menus ] ; then update-menus ; fi' >> deb/DEBIAN/postrm" >> $MAKEFILE
+    $ECHO_ESC "\t@echo 'if [ -x /usr/bin/update-mime ] ; then update-mime ; fi' >> deb/DEBIAN/postrm" >> $MAKEFILE
+    $ECHO_ESC "\t@chmod 0755 deb/DEBIAN/postrm" >> $MAKEFILE
+    $ECHO_ESC "\t@rm -f \$(DEBPKG)" >> $MAKEFILE
+    $ECHO_ESC "\t@dpkg-deb -v -b deb \$(DEBPKG)" >> $MAKEFILE
+    $ECHO_ESC "\t@rm -f -r deb" >> $MAKEFILE
+    $ECHO_ESC "\t-@lintian --profile debian \$(DEBPKG)" >> $MAKEFILE
+    $ECHO_ESC "" >> $MAKEFILE
+}
+
+write_makefile_dependency_resolver()
+{
+    $ECHO_ESC "# BEGIN: deb package dependency resolving block" >> $MAKEFILE
+    $ECHO_ESC "# {" >> $MAKEFILE
+    $ECHO_ESC "    # return the version for the given package" >> $MAKEFILE
+    $ECHO_ESC "    GET_PKG_VERSION = \$(shell dpkg -s \$(PACKAGE) 2> /dev/null | grep '^Version:' | sed -e 's|Version: ||g;s|-.*||g')" >> $MAKEFILE
+    $ECHO_ESC "" >> $MAKEFILE
+    $ECHO_ESC "    # non-escape patterns" >> $MAKEFILE
+    $ECHO_ESC "    PATTERN_01 = s|^Depends: ||g;s|([^)]*)||g;s|,||g;s|\|||;s|  | |g" >> $MAKEFILE
+    $ECHO_ESC "    PATTERN_02 = ," >> $MAKEFILE
+    $ECHO_ESC "    PATTERN_03 = (" >> $MAKEFILE
+    $ECHO_ESC "    PATTERN_04 = )" >> $MAKEFILE
+    $ECHO_ESC "    PATTERN_05 = (%)" >> $MAKEFILE
+    $ECHO_ESC "    PATTERN_06 = =" >> $MAKEFILE
+    $ECHO_ESC "    PATTERN_07 = (>= " >> $MAKEFILE
+    $ECHO_ESC "" >> $MAKEFILE
+    $ECHO_ESC "    # generate a list of required packages for the binary file" >> $MAKEFILE
+    $ECHO_ESC "    BIN_PKG_DEPS = \$(sort \$(shell dpkg -S \$(filter /%, \$(shell ldd \$(BINFILE) 2> /dev/null)) 2> /dev/null | sed -e 's|:.*||g'))" >> $MAKEFILE
+    $ECHO_ESC "    # generate a list of user defined packages for the binary file" >> $MAKEFILE
+    $ECHO_ESC "    USER_PKG_DEPS = \$(PKGDEPENDS)" >> $MAKEFILE
+    $ECHO_ESC "    # add user defined packages to required packages" >> $MAKEFILE
+    $ECHO_ESC "    BIN_USER_PKG_DEPS = \$(sort \$(BIN_PKG_DEPS) \$(USER_PKG_DEPS))" >> $MAKEFILE
+    $ECHO_ESC "    # generate a list of all dependencies for each required package (ignore user defined packages)" >> $MAKEFILE
+    $ECHO_ESC "    RECURSIVE_BIN_PKG_DEPS = \$(sort \$(shell dpkg -s \$(BIN_PKG_DEPS) 2> /dev/null | grep '^Depends:' | sed -e \"\$(PATTERN_01)\"))" >> $MAKEFILE
+    $ECHO_ESC "    # remove packages which are already included by other packages (recursive dependencies)" >> $MAKEFILE
+    $ECHO_ESC "    DISTINCT_BIN_PKG_DEPS = \$(filter-out \$(RECURSIVE_BIN_PKG_DEPS),\$(BIN_USER_PKG_DEPS))" >> $MAKEFILE
+    $ECHO_ESC "    # append version information for each package available on the system" >> $MAKEFILE
+    $ECHO_ESC "    RESOLVE_BIN_PKG_DEPS = \$(foreach PACKAGE,\$(DISTINCT_BIN_PKG_DEPS),\$(if \$(GET_PKG_VERSION),\$(PACKAGE) \$(PATTERN_07)\$(GET_PKG_VERSION)\$(PATTERN_04),\$(PACKAGE))\$(PATTERN_02))" >> $MAKEFILE
+    $ECHO_ESC "# }" >> $MAKEFILE
+    $ECHO_ESC "# END" >> $MAKEFILE
+    $ECHO_ESC "" >> $MAKEFILE
+}
+
+# TODO: add iss section for creating inno setup script
+
+######################################
+### main entry point of the script ###
+######################################
+
+CONFIGSCRIPT=$(pwd)/config_default.sh
+INSTALLDIR="/usr/local"
+# TODO: change default installation directory for mingw/windows?
+#if [ $(uname | grep 'MING.*NT.*') ]
+#then
+#   INSTALLDIR="/c/Program Files"
+#fi
+MAKEFILE=$(pwd)/Makefile
+
+# itereate commandline arguments
+for ARG in "$@"
+do
+    case "$ARG" in
+        -h)             show_help
+                        ;;
+        --help)         show_help
+                        ;;
+        -i)             initialize
+                        ;;
+        --init)         initialize
+                        ;;
+        --config-*)     CONFIGSCRIPT=$(pwd)/$(echo $ARG | sed 's|--config-|config_|g').sh
+                        ;;
+        --prefix=*)     INSTALLDIR=$(echo $ARG | sed 's|--prefix=||g')
+                        ;;
+    esac
+done
+
+rm -f $MAKEFILE
+
+echo
+echo "Environment:"
+check_env
+if [ $? = 0 ]
+then
+    echo
+    echo "Using: $(basename $CONFIGSCRIPT)"
+    default_config
+    load_config
+    if [ $? = 0 ]
+    then
+        write_makefile_header
+        write_makefile_configuration
+        write_makefile_rule_build
+        write_makefile_rule_clean
+        write_makefile_rule_dist_installer
+        write_makefile_rule_dist_tgz
+        #check_command "dpkg --version"
+        dpkg --version >/dev/null 2>&1
+        if [ $? = 0 ]
+        then
+            write_makefile_rule_dist_deb
+            write_makefile_dependency_resolver
+        fi
+    fi
+fi
+
+echo
