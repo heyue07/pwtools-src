@@ -1,5 +1,48 @@
 #include "main.h"
 
+void print_help()
+{
+    printf("Usage: spck [mode] [option] [compression]\n");
+    printf("\n");
+    printf("Mode:\n");
+    printf("\n");
+    printf("  -pw             Perfect World\n");
+    printf("  -jd             Jade Dynasty\n");
+    printf("  -fw             Forsaken World\n");
+    printf("  -eso            Ether Sage\n");
+    printf("  -rwpd           Steps / Sincerity Dance Scrambling\n");
+    printf("\n");
+    printf("Option:\n");
+    printf("\n");
+    printf("  -x FILE         Extract a *.pck FILE\n");
+    printf("                  Files will be extracted into a subdirectory\n");
+    printf("                  of the same directory\n");
+    printf("  -xp FILE        Extract and decode a *.cup patch FILE\n");
+    printf("                  Files will be decoded into a subdirectory\n");
+    printf("                  of the same directory\n");
+    printf("  -c DIRECTORY    Compress content of DIRECTORY to *.pck\n");
+    printf("                  File will be created in the same directory\n");
+    printf("  -cp DIRECTORY   Compress content of DIRECTORY to *.xup\n");
+    printf("                  File will be created in the same directory\n");
+    printf("                  !!! ONLY SUPPORTED ON WINDOWS !!!\n");
+    printf("  -a DIRECTORY    Insert content from DIRECTORY to the\n");
+    printf("                  corresponding *.pck file\n");
+    printf("  -ap DIRECTORY   Insert content from DIRECTORY to the\n");
+    printf("                  corresponding *.pck file\n");
+    printf("                  The names of files and subdirectories\n");
+    printf("                  in DIRECTORY must be base64 encoded\n");
+    printf("\n");
+    printf("Compression (Optional):\n");
+    printf("\n");
+    printf("  VALUE           Number VALUE indicating compression level\n");
+    printf("                  Range [0..9] with 0: none, 9: maximum\n");
+    printf("                  This is optional, default value: 1\n");
+    printf("                  Only affects compress/insert mode\n");
+    printf("\n");
+    printf("Further information can be found at:\n");
+    printf("http://sourceforge.net/p/pw-tools/doc/sPCK\n");
+}
+
 bool compare(wxByte* buffer1, wxByte* buffer2, wxUint32 length)
 {
     for(wxUint32 i=0; i<length; i++)
@@ -36,10 +79,10 @@ void wxDeldir(wxString Directory)
 
     for(wxUint32 i=0; i<files.Count(); i++)
     {
-        wxRmDir(files[i]);
+        wxRmdir(files[i]);
     }
 
-    wxRmDir(Directory);
+    wxRmdir(Directory);
 }
 
 wxByte* fillPath(wxByte* source)
@@ -120,59 +163,11 @@ void decompress(wxString fileIn, wxString fileOut)
     }
 }
 
-/*
-    recursivly rename all files and directories to base64
-*/
-/*
-void encodeBase64Entry(wxString path, wxCSConv encoding, bool isRoot)
-{
-    wxDir dir(path);
-    wxString entry;
-    wxString encoded;
-    wxArrayString flatEntries;
-
-    if(dir.GetFirst(&entry))
-    {
-        flatEntries.Add(entry);
-    }
-    while(dir.GetNext(&entry))
-    {
-        flatEntries.Add(entry);
-    }
-
-    for(wxUint32 i=0; i<flatEntries.Count(); i++)
-    {
-        entry = path + wxT("\\") + flatEntries[i];
-
-        // if entry is a directory
-        if(wxDir::Exists(entry))
-        {
-            encodeBase64Entry(entry, encoding, false);
-        }
-        // if entry is a file
-        if(wxFile::Exists(entry))
-        {
-            encoded = entry.BeforeLast('\\') + wxT("\\") + Base64::Encode(flatEntries[i], encoding);
-            wxRenameFile(entry, encoded);
-        }
-    }
-
-    // encode the parent path (last directory)
-    if(!isRoot)
-    {
-        encoded = path.BeforeLast('\\') + wxT("\\") + Base64::Encode(path.AfterLast('\\'), encoding);
-        wxRenameFile(path, encoded);
-    }
-    else
-    {
-        wxRenameFile(path, path.BeforeLast('.').BeforeLast('.') + wxT(".pck.b64.files"));
-    }
-}
-*/
 
 /*
     returns the base64 encoded entry
 */
+// FIXME: no linux support
 wxString encodeBase64Entry(wxString decodedPath, wxCSConv encoding)
 {
     wxString temp;
@@ -201,16 +196,16 @@ wxString decodeBase64Entry(wxString encodedPath, wxCSConv encoding)
     wxString temp;
     wxString result = wxT("");
 
-    while(encodedPath.Contains(wxT("\\")))
+    while(encodedPath.Contains(wxFileName::GetPathSeparator()))
     {
         // attention: reversed order
-        temp = encodedPath.AfterLast('\\');
+        temp = encodedPath.AfterLast(wxFileName::GetPathSeparator());
 
         temp = Base64::Decode(temp, encoding);
 
-        result = wxT("\\") + temp + result;
+        result = wxFileName::GetPathSeparator() + temp + result;
 
-        encodedPath = encodedPath.BeforeLast('\\');
+        encodedPath = encodedPath.BeforeLast(wxFileName::GetPathSeparator());
     }
 
     return(result);
@@ -218,7 +213,7 @@ wxString decodeBase64Entry(wxString encodedPath, wxCSConv encoding)
 
 wxByte* writeTableEntry(fileTableEntry fte, wxUint32& sizeCompressed, bool compress)
 {
-    wxByte* buffer = new wxByte[276];
+    wxByte* buffer = new wxByte[ENTRY_SIZE];
     wxMemoryOutputStream mos;
     wxDataOutputStream bos(mos);
     mos.Write(fte.filePath, 260);
@@ -226,11 +221,11 @@ wxByte* writeTableEntry(fileTableEntry fte, wxUint32& sizeCompressed, bool compr
     bos.Write32(fte.fileDataDecompressedSize);
     bos.Write32(fte.fileDataCompressedSize);
     bos.Write32(0);
-    mos.CopyTo(buffer, 276);
+    mos.CopyTo(buffer, ENTRY_SIZE);
     if(compress)
     {
         wxByte* pBuffer = buffer;
-        buffer = inflate(buffer, 276, sizeCompressed, 1);
+        buffer = inflate(buffer, ENTRY_SIZE, sizeCompressed, COMPRESSION_LEVEL);
         wxDELETEA(pBuffer);
     }
 
@@ -245,11 +240,11 @@ fileTableEntry readTableEntry(wxByte* buffer, wxUint32 size, bool compressed)
     if(compressed)
     {
         wxByte* pBuffer = buffer;
-        buffer = deflate(buffer, size, 276);
+        buffer = deflate(buffer, size, ENTRY_SIZE);
         wxDELETEA(pBuffer);
     }
 
-    wxMemoryInputStream mis(buffer, 276);
+    wxMemoryInputStream mis(buffer, ENTRY_SIZE);
     wxDataInputStream bis(mis);
     mis.Read(fte.filePath, 260);
     fte.fileDataOffset = bis.Read32();
@@ -263,13 +258,15 @@ fileTableEntry readTableEntry(wxByte* buffer, wxUint32 size, bool compressed)
 */
 void createPath(wxString rootDirectory, wxString subPath)
 {
-    rootDirectory.Append(wxT("\\"));
-    subPath.Replace(wxT("/"), wxT("\\"), true);
+    rootDirectory.Append(wxFileName::GetPathSeparator());
+    #ifdef __WINDOWS__
+    subPath.Replace(wxT("/"), wxString(wxFileName::GetPathSeparator()), true);
+    #endif
 
-    while(subPath.Contains(wxT("\\")))
+    while(subPath.Contains(wxFileName::GetPathSeparator()))
     {
-        rootDirectory.Append(subPath.BeforeFirst('\\') + wxT("\\"));
-        subPath = subPath.AfterFirst('\\');
+        rootDirectory.Append(subPath.BeforeFirst(wxFileName::GetPathSeparator()) + wxFileName::GetPathSeparator());
+        subPath = subPath.AfterFirst(wxFileName::GetPathSeparator());
         if(!wxDirExists(rootDirectory))
         {
             wxMkdir(rootDirectory);
@@ -312,7 +309,7 @@ void extract(wxString file)
         fis.Read(buffer, entrySize);
 
         // use zlib decompression if compressed_size < decompressed_size
-        if(entrySize < 276)
+        if(entrySize < ENTRY_SIZE)
         {
             fileTable[i] = readTableEntry(buffer, entrySize, true);
         }
@@ -336,12 +333,16 @@ void extract(wxString file)
     {
         wxPrintf(wxString::Format(wxT("\rExtracting Files: %i/%i"), (i+1), entryCount));
 
+        // table entries contains path in windows format -> convert path seperator to platform
         subPath = wxString((char*)fileTable[i].filePath, enc);
+        #ifndef __WINDOWS__
+        subPath.Replace(wxT("\\"), wxString(wxFileName::GetPathSeparator()), true);
+        #endif
         createPath(rootPath, subPath);
 
         buffer = new wxByte[fileTable[i].fileDataCompressedSize];
 
-        wxFFileOutputStream fos(rootPath + wxT("\\") + subPath);
+        wxFFileOutputStream fos(rootPath + wxFileName::GetPathSeparator() + subPath);
         fis.SeekI(fileTable[i].fileDataOffset, wxFromStart);
         fis.Read(buffer, fileTable[i].fileDataCompressedSize);
 
@@ -360,6 +361,8 @@ void extract(wxString file)
 
         wxDELETEA(buffer);
     }
+
+    wxPrintf(wxT("\n"));
 }
 
 /*
@@ -392,7 +395,11 @@ void compress(wxString directory)
     {
         wxPrintf(wxString::Format(wxT("\rCompressing Files: %i/%i"), (i+1), entryCount));
 
-        fileTable[i].filePath = fillPath((wxByte*)files[i].Mid(directory.Length()+1).mb_str(enc).release());
+        wxString winPath = files[i].Mid(directory.Length()+1);
+        #ifndef __WINDOWS__
+        winPath.Replace(wxString(wxFileName::GetPathSeparator()), wxT("\\"));
+        #endif
+        fileTable[i].filePath = fillPath((wxByte*)winPath.mb_str(enc).release());
 
         fileTable[i].fileDataOffset = fos.TellO();
         wxFFileInputStream fis(files[i]);
@@ -400,7 +407,7 @@ void compress(wxString directory)
         buffer = new wxByte[fileTable[i].fileDataDecompressedSize];
         fis.Read(buffer, fileTable[i].fileDataDecompressedSize);
 
-        zipBuffer = inflate(buffer, fileTable[i].fileDataDecompressedSize, fileTable[i].fileDataCompressedSize, 1);
+        zipBuffer = inflate(buffer, fileTable[i].fileDataDecompressedSize, fileTable[i].fileDataCompressedSize, COMPRESSION_LEVEL);
 
         // use zlib compression if compressed_size < decompressed_size
         if(fileTable[i].fileDataCompressedSize < fileTable[i].fileDataDecompressedSize)
@@ -429,16 +436,16 @@ void compress(wxString directory)
 
         zipBuffer = writeTableEntry(fileTable[i], entrySize, true);
 
-        if(entrySize > 272)
+        if(entrySize > ENTRY_SIZE)
         {
-            entrySize = 272;
+            entrySize = ENTRY_SIZE;
         }
 
         bos.Write32(entrySize xor KEY_1);
         bos.Write32(entrySize xor KEY_2);
 
         // use zlib compression if compressed_size < decompressed_size
-        if(entrySize < 272)
+        if(entrySize < ENTRY_SIZE)
         {
             fos.Write(zipBuffer, entrySize);
         }
@@ -474,6 +481,8 @@ void compress(wxString directory)
     wxUint32 fileSize = fos.TellO();
     fos.SeekO(4, wxFromStart);
     bos.Write32(fileSize);
+
+    wxPrintf(wxT("\n"));
 }
 
 /*
@@ -518,7 +527,7 @@ void add(wxString directory, bool isBase64)
         fin.Read(buffer, entrySize);
 
         // use zlib decompression if compressed_size < decompressed_size
-        if(entrySize < 276)
+        if(entrySize < ENTRY_SIZE)
         {
             fileTable[i] = readTableEntry(buffer, entrySize, true);
         }
@@ -539,21 +548,23 @@ void add(wxString directory, bool isBase64)
     {
         wxPrintf(wxString::Format(wxT("\rAdding Files: %i/%i"), (i-entryCountOld+1), entryCountAdd));
 
+        wxString winPath = files[i-entryCountOld].Mid(directory.Length()+1);
         if(isBase64)
         {
-            fileTable[i].filePath = fillPath((wxByte*)decodeBase64Entry(wxT("\\") + files[i-entryCountOld].Mid(directory.Length()+1), enc).mb_str(enc).release());
+            winPath = decodeBase64Entry(wxFileName::GetPathSeparator() + winPath, enc);
         }
-        else
-        {
-            fileTable[i].filePath = fillPath((wxByte*)files[i-entryCountOld].Mid(directory.Length()+1).mb_str(enc).release());
-        }
+        #ifndef __WINDOWS__
+        winPath.Replace(wxString(wxFileName::GetPathSeparator()), wxT("\\"));
+        #endif
+        fileTable[i].filePath = fillPath((wxByte*)winPath.mb_str(enc).release());
+
         fileTable[i].fileDataOffset = fout.TellO();
         wxFFileInputStream fis(files[i-entryCountOld]);
         fileTable[i].fileDataDecompressedSize = fis.GetSize();
         buffer = new wxByte[fileTable[i].fileDataDecompressedSize];
         fis.Read(buffer, fileTable[i].fileDataDecompressedSize);
 
-        zipBuffer = inflate(buffer, fileTable[i].fileDataDecompressedSize, fileTable[i].fileDataCompressedSize, 1);
+        zipBuffer = inflate(buffer, fileTable[i].fileDataDecompressedSize, fileTable[i].fileDataCompressedSize, COMPRESSION_LEVEL);
 
         // use zlib compression if compressed_size < decompressed_size
         if(fileTable[i].fileDataCompressedSize < fileTable[i].fileDataDecompressedSize)
@@ -579,10 +590,8 @@ void add(wxString directory, bool isBase64)
     for(wxUint32 i=0; i<entryCount; i++)
     {
         // check if the current file entry was replaced by a newer one
-        //for(wxUint32 n=0; n<entryCountAdd; n++)
         for(wxUint32 n=entryCountOld; n<entryCount; n++)
         {
-            //if(i<entryCountOld && files[n].Mid(directory.Length()+1).CmpNoCase(wxString((char*)fileTable[i].filePath, enc))==0)
             if(i<entryCountOld && compare(fileTable[n].filePath, fileTable[i].filePath, 260))
             {
                 // this entry was replaced and will not be written
@@ -593,16 +602,16 @@ void add(wxString directory, bool isBase64)
             {
                 zipBuffer = writeTableEntry(fileTable[i], entrySize, true);
 
-                if(entrySize > 272)
+                if(entrySize > ENTRY_SIZE)
                 {
-                    entrySize = 272;
+                    entrySize = ENTRY_SIZE;
                 }
 
                 bout.Write32(entrySize xor KEY_1);
                 bout.Write32(entrySize xor KEY_2);
 
                 // use zlib compression if compressed_size < decompressed_size
-                if(entrySize < 272)
+                if(entrySize < ENTRY_SIZE)
                 {
                     fout.Write(zipBuffer, entrySize);
                 }
@@ -643,6 +652,8 @@ void add(wxString directory, bool isBase64)
     wxUint32 fileSize = fout.TellO();
     fout.SeekO(4, wxFromStart);
     bout.Write32(fileSize);
+
+    wxPrintf(wxT("\n"));
 }
 
 /*
@@ -668,7 +679,7 @@ void decode(wxString directory)
     wxDir::GetAllFiles(directory, &v_incs, wxT("*.inc"), wxDIR_DEFAULT);
 
     wxString line;
-    wxString chDir = wxT("\\");
+    wxString chDir = wxFileName::GetPathSeparator();
     wxString fileBase64;
     wxString fileDecoded;
 
@@ -689,13 +700,15 @@ void decode(wxString directory)
             {
                 //filesMD5.Add(line.Mid(1).BeforeFirst(' '));
                 line = line.AfterFirst(' ');
-                line.Replace(wxT("/"), wxT("\\"), true);
+                #ifdef __WINDOWS__
+                line.Replace(wxT("/"), wxString(wxFileName::GetPathSeparator()), true);
+                #endif
 
                 // currently file path' are using a "change dir" based system
                 // we need to add the root path to all files that are listed after a change dir command
-                if(line.StartsWith(wxT("\\")))
+                if(line.StartsWith(wxString(wxFileName::GetPathSeparator())))
                 {
-                    chDir = line.BeforeLast('\\') + wxT("\\");
+                    chDir = line.BeforeLast(wxFileName::GetPathSeparator()) + wxFileName::GetPathSeparator();
                     fileBase64 = line;
                 }
                 else
@@ -703,8 +716,14 @@ void decode(wxString directory)
                     fileBase64 = chDir + line;
                 }
 
+                /*
+                    all previous extracted filenames are usually lowercase (lowercase stored in table entries)
+                    filenames in v-*.inc contains the genuine base64 filename, containing upper and lower characters
+                    windows does not distinguish between upper/lower filenames, but linux does
+                    -> we need to lower the filename where required
+                */
                 // check if this file exists
-                if(wxFile::Exists(directory + wxT("\\element") + fileBase64))
+                if(wxFile::Exists(directory + wxFileName::GetPathSeparator() + wxT("element") + fileBase64.Lower()))
                 {
                     fileDecoded = decodeBase64Entry(fileBase64, enc);
 
@@ -712,7 +731,7 @@ void decode(wxString directory)
                     createPath(directoryOut, wxT("element") + fileDecoded);
 
                     // deflate the encoded file to the new path
-                    decompress(directory + wxT("\\element") + fileBase64, directoryOut + wxT("\\element") + fileDecoded);
+                    decompress(directory + wxFileName::GetPathSeparator() + wxT("element") + fileBase64.Lower(), directoryOut + wxFileName::GetPathSeparator() + wxT("element") + fileDecoded);
                 }
 
                 wxPrintf(wxString::Format(wxT("\rDecompressing Files: %i"), (i+1)));
@@ -723,6 +742,8 @@ void decode(wxString directory)
 
         f.Close();
     }
+
+    wxPrintf(wxT("\n"));
 }
 
 /*
@@ -732,23 +753,11 @@ void decode(wxString directory)
     After compression the filenames are encoded
     and the file contents are enflated
 */
+// FIXME: no linux support
 void encode(wxString directory)
 {
     wxPrintf(wxT("Operation Mode: Create Patch\n\n") + directory + wxT("\n\n"));
-/*
-    wxCSConv enc(wxFONTENCODING_GB2312);
-    wxArrayString directories;
-    wxDirTraverserDirectories dirTraverser(directories);
-    wxDir(directory).Traverse(dirTraverser, wxT("*.pck.files"), wxDIR_DEFAULT);
 
-    for(wxUint32 i=0; i<directories.Count(); i++)
-    {
-        if(directories[i].EndsWith(wxT(".pck.files")))
-        {
-            encodeBase64Entry(directories[i], enc, true);
-        }
-    }
-*/
     wxCSConv enc(wxFONTENCODING_GB2312);
     wxArrayString files;
     wxDirTraverserFiles fileTraverser(files);
@@ -796,171 +805,169 @@ IMPLEMENT_APP(pckApp);
 
 bool pckApp::OnInit()
 {
-    //(*AppInitialize
-    bool wxsOK = true;
-    if(wxsOK)
+    // check if amount of command line arguments is correct
+    // first parameter is the execuable file itself
+    // second is the game mode
+    // third is the instruction
+    // fourth is the file/directory
+    // fifth is optional compression level
+
+    if(argc < 4)
     {
-        wxSystem(wxT("cls"));
-
-        // check if amount of command line arguments is correct
-        // first parameter is the execuable file itself
-        // second is the game mode
-        // third is the instruction
-        // fourth is the file/directory
-
-        if(argc<4)
-        {
-            wxPrintf(wxT("Invalid amount of arguments\nPress Enter to exit"));
-            wxScanf(new wxChar);
-            exit(1);
-        }
-
-        // Convert first parameter argv[1] from char* to wxString
-        wxString gamemode(argv[1], wxConvUTF8);
-        // Convert second parameter argv[2] from char* to wxString
-        wxString instruction(argv[2], wxConvUTF8);
-        // Convert third parameter argv[3] from char* to wxString
-        wxString path(argv[3], wxConvUTF8);
-
-        // file signature for all games
-        {
-            FSIG_1 = 1305093103;
-            FSIG_2 = 1453361591;
-        }
-        // perfect world & jade dynasty
-        if(gamemode == wxT("-pw") || gamemode == wxT("-jw"))
-        {
-            KEY_1 = -1466731422;
-            KEY_2 = -240896429;
-            ASIG_1 = -33685778;
-            ASIG_2 = -267534609;
-        }
-        // forsaken world
-        if(gamemode == wxT("-fw"))
-        {
-            KEY_1 = 566434367;
-            KEY_2 = 408690725;
-            ASIG_1 = -1526153788;
-            ASIG_2 = -2060097592;
-        }
-        // ether sage
-        if(gamemode == wxT("-eso"))
-        {
-            KEY_1 = -1228069623;
-            KEY_2 = 1822409141;
-            ASIG_1 = 1571301968;
-            ASIG_2 = 2043846474;
-        }
-        // rwp dance (steps)
-        if(gamemode == wxT("-rwpd"))
-        {
-            KEY_1 = 711164174;
-            KEY_2 = 839959661;
-            ASIG_1 = -1424846705;
-            ASIG_2 = -1289545470;
-        }
-
-        if(instruction != wxT("-x") && instruction != wxT("-c") && instruction != wxT("-a") && instruction != wxT("-ap") && instruction != wxT("-xp") && instruction != wxT("-cp"))
-        {
-            wxPrintf(wxT("Second argument is not a valid instruction\nPress Enter to exit"));
-            wxScanf(new wxChar);
-            exit(2);
-        }
-
-        if(instruction == wxT("-x"))
-        {
-            // Check if path is a valid file
-            if(!wxFileExists(path))
-            {
-                wxPrintf(wxT("Third argument is not a valid file\nPress Enter to exit"));
-                wxScanf(new wxChar);
-                exit(3);
-            }
-            else
-            {
-                extract(path);
-            }
-        }
-
-        if(instruction == wxT("-c"))
-        {
-            // Check if path is a valid directory
-            if(!wxDirExists(path) && path.EndsWith(wxT(".pck.files")))
-            {
-                wxPrintf(wxT("Third argument is not a valid directory\nPress Enter to exit"));
-                wxScanf(new wxChar);
-                exit(4);
-            }
-            else
-            {
-                compress(path);
-            }
-        }
-
-        if(instruction == wxT("-a"))
-        {
-            // Check if path is a valid directory
-            if(!wxDirExists(path))
-            {
-                wxPrintf(wxT("Third argument is not a valid directory\nPress Enter to exit"));
-                wxScanf(new wxChar);
-                exit(5);
-            }
-            else
-            {
-                add(path, false);
-            }
-        }
-
-        if(instruction == wxT("-ap"))
-        {
-            // Check if path is a valid directory
-            if(!wxDirExists(path))
-            {
-                wxPrintf(wxT("Third argument is not a valid directory\nPress Enter to exit"));
-                wxScanf(new wxChar);
-                exit(5);
-            }
-            else
-            {
-                add(path, true);
-            }
-        }
-
-        if(instruction == wxT("-xp"))
-        {
-            // Check if path is a valid file
-            if(!wxFileExists(path))
-            {
-                wxPrintf(wxT("Third argument is not a valid file\nPress Enter to exit"));
-                wxScanf(new wxChar);
-                exit(6);
-            }
-            else
-            {
-                extract(path);
-                wxPrintf(wxT("\n\n\n"));
-                decode(path + wxT(".files"));
-            }
-        }
-
-        if(instruction == wxT("-cp"))
-        {
-            // Check if path is a valid directory
-            if(!wxDirExists(path))
-            {
-                wxPrintf(wxT("Third argument is not a valid directory\nPress Enter to exit"));
-                wxScanf(new wxChar);
-                exit(7);
-            }
-            else
-            {
-                encode(path);
-            }
-        }
-
-    	wxsOK = false;
+        print_help();
+        exit(1);
     }
-    //*)
-    return wxsOK;
+
+    // Convert first parameter argv[1] from char* to wxString
+    wxString gamemode(argv[1], wxConvUTF8);
+    // Convert second parameter argv[2] from char* to wxString
+    wxString instruction(argv[2], wxConvUTF8);
+    // Convert third parameter argv[3] from char* to wxString
+    wxString path(argv[3], wxConvUTF8);
+    // Convert fourth parameter argv[4] from char* to int
+    if(argc > 4)
+    {
+        COMPRESSION_LEVEL = wxAtoi(argv[4]);
+        if(COMPRESSION_LEVEL < 0)
+        {
+            COMPRESSION_LEVEL = 0;
+        }
+        if(COMPRESSION_LEVEL > 9)
+        {
+            COMPRESSION_LEVEL = 9;
+        }
+    }
+
+    // file signature for all games
+    {
+        FSIG_1 = 1305093103;
+        FSIG_2 = 1453361591;
+    }
+    // perfect world & jade dynasty
+    if(gamemode == wxT("-pw") || gamemode == wxT("-jw"))
+    {
+        KEY_1 = -1466731422;
+        KEY_2 = -240896429;
+        ASIG_1 = -33685778;
+        ASIG_2 = -267534609;
+    }
+    // forsaken world
+    if(gamemode == wxT("-fw"))
+    {
+        KEY_1 = 566434367;
+        KEY_2 = 408690725;
+        ASIG_1 = -1526153788;
+        ASIG_2 = -2060097592;
+    }
+    // ether sage
+    if(gamemode == wxT("-eso"))
+    {
+        KEY_1 = -1228069623;
+        KEY_2 = 1822409141;
+        ASIG_1 = 1571301968;
+        ASIG_2 = 2043846474;
+    }
+    // rwp dance (steps)
+    if(gamemode == wxT("-rwpd"))
+    {
+        KEY_1 = 711164174;
+        KEY_2 = 839959661;
+        ASIG_1 = -1424846705;
+        ASIG_2 = -1289545470;
+    }
+
+    if(instruction != wxT("-x") && instruction != wxT("-c") && instruction != wxT("-a") && instruction != wxT("-ap") && instruction != wxT("-xp") && instruction != wxT("-cp"))
+    {
+        wxPrintf(wxT("Second argument is not a valid instruction\n"));
+        exit(2);
+    }
+
+    if(instruction == wxT("-x"))
+    {
+        // Check if path is a valid file
+        if(!wxFileExists(path))
+        {
+            wxPrintf(wxT("Third argument is not a valid file\n"));
+            exit(3);
+        }
+        else
+        {
+            extract(path);
+        }
+    }
+
+    if(instruction == wxT("-c"))
+    {
+        // Check if path is a valid directory
+        if(!wxDirExists(path) || !path.EndsWith(wxT(".pck.files")))
+        {
+            wxPrintf(wxT("Third argument is not a valid directory\n"));
+            exit(4);
+        }
+        else
+        {
+            compress(path);
+        }
+    }
+
+    if(instruction == wxT("-a"))
+    {
+        // Check if path is a valid directory
+        if(!wxDirExists(path))
+        {
+            wxPrintf(wxT("Third argument is not a valid directory\n"));
+            exit(5);
+        }
+        else
+        {
+            add(path, false);
+        }
+    }
+
+    if(instruction == wxT("-ap"))
+    {
+        // Check if path is a valid directory
+        if(!wxDirExists(path))
+        {
+            wxPrintf(wxT("Third argument is not a valid directory\n"));
+            exit(5);
+        }
+        else
+        {
+            add(path, true);
+        }
+    }
+
+    if(instruction == wxT("-xp"))
+    {
+        // Check if path is a valid file
+        if(!wxFileExists(path))
+        {
+            wxPrintf(wxT("Third argument is not a valid file\n"));
+            exit(6);
+        }
+        else
+        {
+            extract(path);
+            wxPrintf(wxT("\n\n\n"));
+            decode(path + wxT(".files"));
+        }
+    }
+
+    if(instruction == wxT("-cp"))
+    {
+        // Check if path is a valid directory
+        if(!wxDirExists(path))
+        {
+            wxPrintf(wxT("Third argument is not a valid directory\n"));
+            exit(7);
+        }
+        else
+        {
+            encode(path);
+        }
+    }
+
+    exit(0);
+    return false;
 }
