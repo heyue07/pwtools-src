@@ -8,6 +8,7 @@
 #include <wx/process.h>
 #include <wx/textfile.h>
 #include <wx/stdpaths.h>
+#include <wx/filename.h>
 
 #include "base64.h"
 #include "wxTraverser.h"
@@ -18,12 +19,14 @@ int KEY_1;
 int KEY_2;
 int ASIG_1;
 int ASIG_2;
+int COMPRESSION_LEVEL = 1;
 
 class pckApp : public wxApp
 {
     public: virtual bool OnInit();
 };
 
+wxUint32 ENTRY_SIZE = 272;
 struct fileTableEntry
 {
     //wxInt32 xorBlock1Size; // encoded with key 1
