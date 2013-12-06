@@ -2,12 +2,13 @@
 
 PKGNAME="spck"
 PKGVERSION="3.0.1"
-PKGSECTION="accessories"
+PKGSECTION="misc"
 PKGAUTHOR="Ronny Wegener <wegener.ronny@gmail.com>"
 PKGHOMEPAGE="http://code.google.com/p/pw-tools/wiki/sPCK"
 PKGDEPENDS=""
-PKGDESCRIPTION="sPCK extraction/compression tool
- sPCK can extract, compress and add files from MMORPG using the Angelica Engine (e.g. Perfect World).
+PKGDESCRIPTION="Perfect World extraction/compression tool
+ sPCK can extract, compress and add files from MMORPGs using
+ the Angelica Engine (e.g. Perfect World).
  Supported are archives (*.pck) and patches (*.cup) up to 2 GB."
 
 SRCPATTERN="*.cpp"
