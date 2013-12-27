@@ -4,7 +4,7 @@
 . ./config_default.sh
 
 # overwrite settings from config-default
-RCPATTERN="resource.rc"
+RCPATTERN="*.rc"
 RCDIR="res"
 DISTROOT="build/msw"
 BINFILE="$DISTROOT/bin/$PKGNAME.exe"
