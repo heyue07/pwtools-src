@@ -7,7 +7,7 @@
 RCPATTERN="resource.rc"
 RCDIR="res"
 DISTROOT="build/msw"
-BINFILE="$DISTROOT/$PKGNAME.exe"
+BINFILE="$DISTROOT/bin/$PKGNAME.exe"
 
 CC="mingw32-g++.exe"
 CFLAGS="
@@ -51,5 +51,5 @@ LDLIBS="
     -luuid
     -lcomctl32
     -lgdi32
-	-lcomdlg32
+    -lcomdlg32
     "
