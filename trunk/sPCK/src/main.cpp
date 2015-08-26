@@ -133,6 +133,63 @@ wxByte* inflate(wxByte* buffer, wxUint32 sizeDecompressed, wxUint32& sizeCompres
 }
 
 /*
+ * Merge a pck and pkx file to a temporary file
+ *
+ * @param[in] fileIn Path to the pck file
+ * @param[in] fileOut Path to the temporary merged file pck + pkx
+ *
+ * @return True if pkx exist and files were merged, otherwise false
+ */
+bool mergePCK(wxString fileIn, wxString fileOut) {
+    wxString filePCK = fileIn;
+    wxString filePKX = fileIn; // TODO: replace extension .pck -> .pkx
+    // check if fileIn has a corresponding pkx file
+    if(!wxFileExist(filePKX)) {
+        return false;
+    }
+    // open fileOut for writing
+
+    // open pck for read
+    // append pck to fileOut
+    // close pck
+
+    // open pkx for read
+    // append pkx to fileOut
+    // close pkx
+
+    // close fileOut
+    return true;
+}
+
+/*
+ * Split a temporary merged file into a pck and pkx file
+ *
+ * @param[in] fileIn Path to the temporary merged file pck + pkx
+ * @param[in] fileOut Path to the pck file
+ *
+ * @return True if size > 2GB and file was split, otherwise false
+ */
+bool splitPCK(wxString fileIn, wxString fileOut) {
+    wxString filePCK = fileOut;
+    wxString filePKX = fileOut; // TODO: replace extension .pck -> .pkx
+    // check if fileIn is largen then 2.147.483.648 / 2.147.483.392 byte
+    if(1 < 2147483392) {
+        return false;
+    }
+    // open fileIn for reading
+
+    // open pck for writing
+    // append 2GB of fileIn to pck
+    // close pck
+
+    // open pkx for writing
+    // append the rest of fileIn to pkx
+    // close pkx
+
+    // close fileIn
+}
+
+/*
     deflate a patch file
 */
 void decompress(wxString fileIn, wxString fileOut)
