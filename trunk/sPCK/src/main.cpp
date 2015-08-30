@@ -133,60 +133,100 @@ wxByte* inflate(wxByte* buffer, wxUint32 sizeDecompressed, wxUint32& sizeCompres
 }
 
 /*
- * Merge a pck and pkx file to a temporary file
+ * Extract a part from an input stream and write it to the output stream
  *
- * @param[in] fileIn Path to the pck file
- * @param[in] fileOut Path to the temporary merged file pck + pkx
+ * @param[in] fis
+ * @param[in] fileOut
+ * @param[in] posStart
+ * @param[in] posEnd The byte at the end poition will be excluded
  *
- * @return True if pkx exist and files were merged, otherwise false
+ * @return
  */
-bool mergePCK(wxString fileIn, wxString fileOut) {
-    wxString filePCK = fileIn;
-    wxString filePKX = fileIn; // TODO: replace extension .pck -> .pkx
-    // check if fileIn has a corresponding pkx file
-    if(!wxFileExist(filePKX)) {
+bool segmentation(wxFFileInputStream* fis, wxString fileOut, size_t posStart, size_t posEnd) {
+    if(posStart < 0 || posEnd < 0 || posStart >= posEnd || posEnd > fis->GetSize()) {
         return false;
     }
-    // open fileOut for writing
+    size_t bufferSize = 8*1024*1024; // 8 MB
+    wxByte* buffer = new wxByte[bufferSize];
+    // goto start position
+    fis->SeekI(posStart);
 
-    // open pck for read
-    // append pck to fileOut
-    // close pck
+    // open output file
+    wxFFileOutputStream fos(fileOut);
+    while((size_t)fis->TellI() < posEnd) {
+        if(posEnd - fis->TellI() < bufferSize) {
+            bufferSize = (size_t)(posEnd - fis->TellI());
+        }
+        fis->Read(buffer, bufferSize);
+        fos.Write(buffer, bufferSize);
+    }
 
-    // open pkx for read
-    // append pkx to fileOut
-    // close pkx
+    // close segment
+    fos.Close();
+    wxDELETEA(buffer);
 
-    // close fileOut
     return true;
 }
 
 /*
- * Split a temporary merged file into a pck and pkx file
+ * Copy a pck and pkx file to a merged file (keeps the original pck and pkx)
+ *
+ * @param[in] fileIn Path to the pck file
+ *
+ * @return
+ */
+void mergePCK(wxString fileIn) {
+    // FIXME: check if fileIn ends with .pck and not .pckx
+    //wxPrintf(wxT("Operation Mode: Merge PCK + PKX Files\n\n");
+
+    wxString filePCK = fileIn;
+    wxString filePKX = fileIn.BeforeLast('.') + wxT(".pkx");
+    wxString filePCKX = fileIn.BeforeLast('.') + wxT(".pckx");
+    // check if fileIn has a corresponding pkx file
+    if(!wxFile::Exists(filePKX)) {
+        wxPrintf(wxT("Nothing to be done\n"));
+        return;
+    }
+
+    wxPrintf(wxT("Merging: .pck + .pkx => .pckx\n"));
+    wxConcatFiles(filePCK, filePKX, filePCKX);
+    wxPrintf(wxT("Removing: .pck + .pkx\n"));
+    wxRemoveFile(filePCK);
+    wxRemoveFile(filePKX);
+    wxPrintf(wxT("Renaming: .pckx => .pck\n"));
+    wxRenameFile(filePCKX, filePCK);
+}
+
+/*
+ * Split a file into its pck and pkx parts and delte the input file
  *
  * @param[in] fileIn Path to the temporary merged file pck + pkx
- * @param[in] fileOut Path to the pck file
  *
- * @return True if size > 2GB and file was split, otherwise false
+ * @return
  */
-bool splitPCK(wxString fileIn, wxString fileOut) {
-    wxString filePCK = fileOut;
-    wxString filePKX = fileOut; // TODO: replace extension .pck -> .pkx
-    // check if fileIn is largen then 2.147.483.648 / 2.147.483.392 byte
-    if(1 < 2147483392) {
-        return false;
+void splitPCK(wxString fileIn) {
+    // FIXME: check if fileIn ends with .pckx and not .pck
+    //wxPrintf(wxT("Operation Mode: Split into PCK + PKX Files\n\n");
+
+    wxString filePCK = fileIn;
+    wxString filePKX = fileIn.BeforeLast('.') + wxT(".pkx");
+    wxString filePCKX = fileIn.BeforeLast('.') + wxT(".pckx");
+
+    size_t fileSize = (size_t)wxFileName::GetSize(filePCK).ToULong();
+    // check if fileIn is larger then  2.147.483.392 / 2.147.483.648byte
+    if(fileSize < 2147483392+1) {
+        wxPrintf(wxT("Nothing to be done\n"));
+        return;
     }
-    // open fileIn for reading
 
-    // open pck for writing
-    // append 2GB of fileIn to pck
-    // close pck
-
-    // open pkx for writing
-    // append the rest of fileIn to pkx
-    // close pkx
-
-    // close fileIn
+    wxPrintf(wxT("Renaming: .pck => .pckx\n"));
+    wxRenameFile(filePCK, filePCKX);
+    wxPrintf(wxT("Splitting: .pckx => .pck + .pkx\n"));
+    wxFFileInputStream fis(filePCKX);
+    segmentation(&fis, filePCK, 0, 2147483392);
+    segmentation(&fis, filePKX, 2147483392, fileSize);
+    wxPrintf(wxT("Removing: .pckx\n"));
+    wxRemoveFile(filePCKX);
 }
 
 /*
@@ -339,6 +379,8 @@ void extract(wxString file)
 {
     wxPrintf(wxT("Operation Mode: Extract Files\n\n") + file + wxT("\n\n"));
 
+    mergePCK(file);
+
     wxCSConv enc(wxFONTENCODING_GB2312);
     wxString rootPath = file + wxT(".files");
     wxString subPath;
@@ -430,6 +472,8 @@ void compress(wxString directory)
 {
     wxPrintf(wxT("Operation Mode: Compress Files\n\n") + directory + wxT("\n\n"));
 
+    wxString file = directory.BeforeLast('.');
+
     wxArrayString files;
     wxDirTraverserFiles fileTraverser(files);
     wxDir(directory).Traverse(fileTraverser);
@@ -442,7 +486,7 @@ void compress(wxString directory)
     fileTableEntry fileTable[entryCount];
     wxUint32 entrySize;
 
-    wxFFileOutputStream fos(directory.BeforeLast('.'));
+    wxFFileOutputStream fos(file);
     wxDataOutputStream bos(fos);
     bos.Write32(FSIG_1);
     bos.Write32(0); // placeholder for filesize
@@ -540,6 +584,8 @@ void compress(wxString directory)
     bos.Write32(fileSize);
 
     wxPrintf(wxT("\n"));
+
+    splitPCK(file);
 }
 
 /*
@@ -550,12 +596,14 @@ void add(wxString directory, bool isBase64)
 {
     wxPrintf(wxT("Operation Mode: Add Files\n\n") + directory + wxT("\n\n"));
 
+    wxString pckFile = directory.BeforeLast('.');
+    mergePCK(pckFile);
+
     wxArrayString files;
     wxDirTraverserFiles fileTraverser(files);
     wxDir(directory).Traverse(fileTraverser);
     wxUint32 entryCountAdd = files.Count();
     wxCSConv enc(wxFONTENCODING_GB2312);
-    wxString pckFile = directory.BeforeLast('.');
     pckFile.Replace(wxT(".b64"), wxT(""));
     wxFFileOutputStream fout(pckFile, wxT("r+b"));
     wxDataOutputStream bout(fout);
@@ -711,6 +759,8 @@ void add(wxString directory, bool isBase64)
     bout.Write32(fileSize);
 
     wxPrintf(wxT("\n"));
+
+    splitPCK(pckFile);
 }
 
 /*
