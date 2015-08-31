@@ -1,10 +1,10 @@
 #!/bin/bash
 
 PKGNAME="spck"
-PKGVERSION="3.0.1"
+PKGVERSION="3.0.2"
 PKGSECTION="misc"
 PKGAUTHOR="Ronny Wegener <wegener.ronny@gmail.com>"
-PKGHOMEPAGE="http://code.google.com/p/pw-tools/wiki/sPCK"
+PKGHOMEPAGE="http://sourceforge.net/p/pw-tools/doc/sPCK/"
 PKGDEPENDS=""
 PKGDESCRIPTION="Perfect World extraction/compression tool
  sPCK can extract, compress and add files from MMORPGs using
