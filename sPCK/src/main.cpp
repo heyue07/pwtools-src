@@ -2,9 +2,9 @@
 
 void print_help()
 {
-    printf("Usage: spck [mode] [option] [compression]\n");
+    printf("Usage: spck MODE OPTION [COMPRESSION]\n");
     printf("\n");
-    printf("Mode:\n");
+    printf("MODE:\n");
     printf("\n");
     printf("  -pw             Perfect World\n");
     printf("  -jd             Jade Dynasty\n");
@@ -12,7 +12,7 @@ void print_help()
     printf("  -eso            Ether Sage\n");
     printf("  -rwpd           Steps / Sincerity Dance Scrambling\n");
     printf("\n");
-    printf("Option:\n");
+    printf("OPTION:\n");
     printf("\n");
     printf("  -x FILE         Extract a *.pck FILE\n");
     printf("                  Files will be extracted into a subdirectory\n");
@@ -32,7 +32,7 @@ void print_help()
     printf("                  The names of files and subdirectories\n");
     printf("                  in DIRECTORY must be base64 encoded\n");
     printf("\n");
-    printf("Compression (Optional):\n");
+    printf("COMPRESSION (Optional):\n");
     printf("\n");
     printf("  VALUE           Number VALUE indicating compression level\n");
     printf("                  Range [0..9] with 0: none, 9: maximum\n");

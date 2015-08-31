@@ -9,7 +9,6 @@ RCDIR="res"
 DISTROOT="build/msw"
 BINFILE="$DISTROOT/bin/$PKGNAME.exe"
 
-CC="mingw32-g++.exe"
 CFLAGS="
     -c
     -Wall
@@ -29,22 +28,23 @@ RCFLAGS="
     -Iinclude/msw
     "
 
-LD="mingw32-g++.exe"
 LDFLAGS="
     -s
+    -static
     -static-libgcc
     -static-libstdc++
     "
 LDLIBS="
     -Llib/msw/wx
-    -lwxmsw28u
-    -lwxmsw28u_gl
-    -lwxexpat
-    -lwxregexu
-    -lwxpng
-    -lwxjpeg
-    -lwxtiff
-    -lwxzlib
+    -lwx_mswu-2.8
+    -lwx_mswu_gl-2.8
+    -lwxexpat-2.8
+    -lwxregexu-2.8
+    -lwxpng-2.8
+    -lwxjpeg-2.8
+    -lwxtiff-2.8
+    -lwxzlib-2.8
+    -L/mingw/lib
     -lwinspool
     -lole32
     -loleaut32
